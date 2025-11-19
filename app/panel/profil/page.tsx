@@ -26,8 +26,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 import PageContainer from '@/components/PageContainer'
+import Image from 'next/image'
+import PortfolioUploader from '@/components/panel/PortfolioUploader'
 
 interface Service {
   id: string
@@ -43,6 +45,11 @@ interface SubService {
 interface District {
   id: number
   name: string
+}
+
+interface PortfolioPhoto {
+  id: number
+  photo_url: string
 }
 
 export default function PanelProfilPage() {
@@ -63,6 +70,10 @@ export default function PanelProfilPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const router = useRouter()
+
+  // Portfolyo fotoğrafları
+  const [portfolioPhotos, setPortfolioPhotos] = useState<PortfolioPhoto[]>([])
+  const [deletingPhotoId, setDeletingPhotoId] = useState<number | null>(null)
 
   // Sayfa yüklendiğinde mevcut profil verilerini çek
   useEffect(() => {
@@ -162,6 +173,19 @@ export default function PanelProfilPage() {
           const districtIds = (providerLocationsData || []).map((pl: any) => pl.district_id)
           setSelectedDistricts(districtIds)
         }
+
+        // Portfolyo fotoğraflarını çek
+        const { data: photosData, error: photosError } = await supabase
+          .from('portfolio_photos')
+          .select('id, photo_url')
+          .eq('provider_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (photosError) {
+          console.error('Portfolyo fotoğrafları yüklenirken hata:', photosError)
+        } else {
+          setPortfolioPhotos(photosData || [])
+        }
       } catch (err: any) {
         console.error('Beklenmeyen hata:', err)
         setMessage({ type: 'error', text: 'Profil bilgileri yüklenirken bir hata oluştu.' })
@@ -209,6 +233,102 @@ export default function PanelProfilPage() {
       setSelectedSubServices([])
     }
   }, [selectedMainService])
+
+  // Portfolyo fotoğraflarını yeniden çek
+  const fetchPortfolioPhotos = async () => {
+    try {
+      const supabase = createClient()
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('portfolio_photos')
+        .select('id, photo_url')
+        .eq('provider_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Fotoğraf çekme hatası:', error)
+        setMessage({ type: 'error', text: 'Kanka, fotoğraflarını çekerken bir sorun oldu.' })
+        return
+      }
+
+      setPortfolioPhotos(data || [])
+    } catch (err) {
+      console.error('Fotoğraf çekme hatası:', err)
+    }
+  }
+
+  // Portfolyo fotoğrafı silme
+  const handleDeletePhoto = async (photo: PortfolioPhoto) => {
+    if (!confirm('Kanka, bu fotoğrafı silmek istediğine emin misin? Geri dönüşü yok.')) return
+
+    setDeletingPhotoId(photo.id)
+
+    try {
+      const supabase = createClient()
+
+      // URL'den dosya yolunu çıkar
+      // Örneğin: https://xxx.supabase.co/storage/v1/object/public/portfolio_gallery/public/userId/timestamp.jpg
+      const url = new URL(photo.photo_url)
+      const pathSegments = url.pathname.split('/')
+      
+      // 'public' kelimesinden sonraki kısmı al
+      const publicIndex = pathSegments.indexOf('public')
+      if (publicIndex === -1) {
+        setMessage({ type: 'error', text: 'Fotoğraf yolu bulunamadı.' })
+        setDeletingPhotoId(null)
+        return
+      }
+
+      // public/ klasöründen sonraki kısmı al
+      const pathToRemove = pathSegments.slice(publicIndex + 1).join('/')
+
+      // 1. Storage'dan Silme
+      const { error: storageError } = await supabase.storage
+        .from('portfolio_gallery')
+        .remove([pathToRemove])
+
+      if (storageError) {
+        console.error('Storage Silme Hatası:', storageError)
+        // Hata olsa bile DB'den silmeye devam et
+        setMessage({ type: 'error', text: 'Uyarı: Storage silinemedi ama DB kaydını deneyeceğiz.' })
+      }
+
+      // 2. Veritabanından Silme
+      const { error: dbError } = await supabase
+        .from('portfolio_photos')
+        .delete()
+        .eq('id', photo.id)
+
+      if (dbError) {
+        console.error('DB Silme Hatası:', dbError)
+        setMessage({ type: 'error', text: `Fotoğraf DB'den silinirken hata oluştu: ${dbError.message}` })
+        setDeletingPhotoId(null)
+        return
+      }
+
+      // Başarılı
+      setPortfolioPhotos(portfolioPhotos.filter((p) => p.id !== photo.id))
+      setMessage({ type: 'success', text: 'Kanka, fotoğraf başarıyla silindi.' })
+      setDeletingPhotoId(null)
+
+      // Mesajı 3 saniye sonra temizle
+      setTimeout(() => {
+        setMessage(null)
+      }, 3000)
+    } catch (error: any) {
+      console.error('Beklenmeyen hata:', error)
+      setMessage({ type: 'error', text: error.message || 'Fotoğraf silinirken bir hata oluştu.' })
+      setDeletingPhotoId(null)
+    }
+  }
 
   // Profil güncelleme fonksiyonu
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -525,6 +645,64 @@ export default function PanelProfilPage() {
             {loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
           </Button>
         </form>
+
+        {/* Portfolyo Yönetimi */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Portfolyo Yönetimi</h2>
+            <p className="text-muted-foreground">
+              Yaptığın işlerin en iyi görsellerini yükle, müşterilere güven ver.
+            </p>
+          </div>
+
+          <PortfolioUploader onUploadSuccess={fetchPortfolioPhotos} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Mevcut Portfolyon ({portfolioPhotos.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {portfolioPhotos.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Henüz hiç portfolyo fotoğrafı yüklemedin kanka.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {portfolioPhotos.map((photo) => (
+                    <div
+                      key={photo.id}
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden group shadow-md"
+                    >
+                      <Image
+                        src={photo.photo_url}
+                        alt={`Portfolyo Fotoğrafı ${photo.id}`}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                        className="transition-transform duration-300 group-hover:scale-105"
+                      />
+
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={() => handleDeletePhoto(photo)}
+                        disabled={deletingPhotoId === photo.id}
+                      >
+                        {deletingPhotoId === photo.id ? (
+                          <span className="text-xs">...</span>
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/50 transition-colors pointer-events-none" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </PageContainer>
   )
