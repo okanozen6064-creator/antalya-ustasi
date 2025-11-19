@@ -1,80 +1,59 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { SearchForm } from '@/components/search-form'
 import { CategoryCards } from '@/components/category-cards'
-import { Shield, Star, Zap, DollarSign } from 'lucide-react'
-import { SearchFormModern } from '@/components/home/SearchFormModern'
-import { redirect } from 'next/navigation'
+import { CheckCircle2, Shield, Star, Zap, DollarSign } from 'lucide-react'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
 
-// Veritabanı tipleri
-type Service = { id: number; name: string; slug: string }
-type District = { id: number; name: string }
-
-// Server Action: Filtreleme ve Yönlendirme
-async function filterAndRedirect(formData: FormData) {
-  'use server'
-
-  const selectedServiceSlug = formData.get('service') as string
-  // FormData.getAll() ile birden fazla ilçe ID'si al
-  const selectedDistrictIds = formData.getAll('district') as string[]
-
-  // Yönlendirme Mantığı
-  if (selectedServiceSlug && selectedServiceSlug !== '0') {
-    let url = `/hizmet/${selectedServiceSlug}`
-
-    if (selectedDistrictIds && selectedDistrictIds.length > 0) {
-      // Çoklu ID'leri virgülle birleştirip query param olarak gönder
-      const districtQuery = selectedDistrictIds.join(',')
-      url += `?ilce=${districtQuery}`
-    }
-
-    redirect(url)
-  }
-
-  redirect('/kategoriler')
-}
-
 export default async function Home() {
   const supabase = await createClient()
 
-  // Veritabanı çekimi
-  const [{ data: services }, { data: districts }] = await Promise.all([
-    supabase.from('services').select('id, name, slug').order('name', { ascending: true }),
-    supabase.from('antalya_districts').select('id, name').order('name', { ascending: true }),
-  ])
+  // Verileri Çek
+  const { data: services } = await supabase
+    .from('services')
+    .select('id, name, slug')
+    .order('name', { ascending: true })
 
-  const safeServices = services || []
-  const safeDistricts = districts || []
+  const { data: districts } = await supabase
+    .from('antalya_districts')
+    .select('id, name, slug')
+    .order('name', { ascending: true })
 
   return (
     <>
       {/* 1. HERO SECTION (ARAMA ALANI) */}
-      <section className="bg-white py-16 md:py-24 border-b">
-        <div className="container mx-auto px-4 max-w-5xl">
-          {/* Başlıklar */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-4">
-              Antalya'nın Güvenilir Ustası Elinin Altında
-            </h1>
-            <p className="text-xl text-slate-500">
-              İhtiyacın olan hizmeti ve bölgeyi seç, en iyi profesyonelleri listele.
-            </p>
+      <section className="relative bg-gradient-to-b from-blue-50 to-white py-20 lg:py-32 px-4">
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
+            Antalya'nın <span className="text-blue-600">En İyi Ustaları</span>
+            <br />
+            Bir Arada
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+            Eviniz, ofisiniz veya aracınız için güvenilir profesyonelleri saniyeler içinde bulun. Ücretsiz teklif alın, karşılaştırın, seçin.
+          </p>
+
+          {/* Arama Kartı */}
+          <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-100 mb-8">
+            <SearchForm services={services || []} districts={districts || []} />
           </div>
 
-          {/* İKİLİ FİLTRELEME FORMU - GÜNCELLENMİŞ TASARIM */}
-          <SearchFormModern
-            services={safeServices}
-            districts={safeDistricts}
-            filterAction={filterAndRedirect}
-          />
-
-          {/* Ek Bilgi Çubuğu */}
-          <div className="text-center mt-6 text-sm text-slate-500">
-            <span className="font-semibold text-green-600">✓ Gerçek Yorumlar</span>
-            <span className="mx-4">|</span>
-            <span className="font-semibold text-orange-600">✓ Fiyat Garantisi</span>
+          {/* Güven Sinyalleri */}
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-gray-500">
+            <span className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              Doğrulanmış Profiller
+            </span>
+            <span className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-500" />
+              Hızlı Teklif
+            </span>
+            <span className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              Gerçek Yorumlar
+            </span>
           </div>
         </div>
       </section>
