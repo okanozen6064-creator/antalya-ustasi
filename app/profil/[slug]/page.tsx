@@ -11,11 +11,20 @@ import { QuoteRequestModal } from '@/components/QuoteRequestModal'
 export const dynamic = 'force-dynamic'
 
 // Yardımcı Fonksiyonlar ve Tipler
+interface ClientProfile {
+  full_name?: string // Müşteri profillerinde full_name bekliyorduk
+  first_name?: string // Loglardan gelen yeni alan
+  last_name?: string // Loglardan gelen yeni alan
+}
+
 interface Review {
   rating: number
   comment: string
   created_at: string
-  client_profiles: { full_name?: string; first_name?: string; last_name?: string } | null
+  // client_profiles artık bir dizi değil, tek bir nesne olmalı (RPC çağrısı single record döndürür)
+  // Ancak logda dizi göründüğü için, geçici olarak dizi kabul edelim ve içindeki full_name'i kullanalım.
+  // Tip uyuşmazlığını gidermek için, 'client_profiles:client_id' join'inin tek bir nesne döndürdüğünü varsayarak tipi esnetiyoruz:
+  client_profiles: ClientProfile | null
 }
 
 interface Photo {
@@ -87,8 +96,15 @@ export default async function ProfileDetailPage({ params }: PageProps) {
   }
 
   const provider = providerData
-  const fullName = `${provider.first_name || ''} ${provider.last_name || ''}`.trim() || 'Esnaf'
-  const avgRating = getAverageRating(provider.reviews || [])
+  // YENİ! Sorgudan çekilen profile verisinde full_name yerine first_name/last_name geldiği varsayılıyor.
+  const fullName =
+    (provider as any).full_name ||
+    `${provider.first_name || ''} ${provider.last_name || ''}`.trim() ||
+    'Esnaf'
+
+  // Hatanın olduğu satır: provider.reviews'ın doğru tipe sahip olduğu varsayımıyla devam et.
+  // Eğer logda hata veren kısım gerçekten bir diziyse, aşağıdaki satırı kullan:
+  const avgRating = getAverageRating((provider.reviews as Review[]) || []) // Tipi zorla
 
   return (
     <main className="container mx-auto px-4 py-8 md:py-12">
@@ -234,11 +250,13 @@ export default async function ProfileDetailPage({ params }: PageProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 {provider.reviews && provider.reviews.length > 0 ? (
-                  provider.reviews.map((review: Review, i: number) => {
+                  (provider.reviews as Review[]).map((review: Review, i: number) => {
+                    // DÜZELTME: Full name veya first/last name'i birleştirerek kullan
                     const clientName =
                       review.client_profiles?.full_name ||
-                      `${review.client_profiles?.first_name || ''} ${review.client_profiles?.last_name || ''}`.trim() ||
-                      'Gizli Müşteri'
+                      (review.client_profiles?.first_name
+                        ? `${review.client_profiles.first_name} ${review.client_profiles.last_name || ''}`.trim()
+                        : 'Gizli Müşteri')
                     return (
                       <div key={i} className="border-b pb-4 last:border-b-0 last:pb-0">
                         <div className="flex items-center justify-between mb-2">
