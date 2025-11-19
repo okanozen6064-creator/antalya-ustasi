@@ -247,7 +247,7 @@ export default function ProfilOlusturPage() {
                     <Checkbox
                       id={`district-${district.id}`}
                       checked={selectedDistricts.includes(district.id)}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={(checked: boolean) => {
                         if (checked) {
                           setSelectedDistricts([...selectedDistricts, district.id])
                         } else {

@@ -458,7 +458,7 @@ export default function PanelProfilPage() {
                         <Checkbox
                           id={`subservice-${subService.id}`}
                           checked={selectedSubServices.includes(subService.id)}
-                          onCheckedChange={(checked) => {
+                          onCheckedChange={(checked: boolean) => {
                             if (checked) {
                               setSelectedSubServices([...selectedSubServices, subService.id])
                             } else {
@@ -500,7 +500,7 @@ export default function PanelProfilPage() {
                       <Checkbox
                         id={`district-${district.id}`}
                         checked={selectedDistricts.includes(district.id)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           if (checked) {
                             setSelectedDistricts([...selectedDistricts, district.id])
                           } else {

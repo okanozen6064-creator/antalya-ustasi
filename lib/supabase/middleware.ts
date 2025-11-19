@@ -89,7 +89,7 @@ export async function updateSession(request: NextRequest) {
   // Senaryo 1: Profil boşsa ve kullanıcı /profil-olustur'da değilse, yönlendir
   if (!profile?.first_name && currentPath !== '/profil-olustur') {
     const redirectUrl = new URL('/profil-olustur', request.url)
-    const redirectResponse = NextResponse.redirect(redirectUrl, { request })
+    const redirectResponse = NextResponse.redirect(redirectUrl)
     // Cookie'leri kopyala
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
@@ -100,7 +100,7 @@ export async function updateSession(request: NextRequest) {
   // Senaryo 2: Profil doluysa ve kullanıcı /profil-olustur'a gitmeye çalışıyorsa, ana sayfaya yönlendir
   if (profile?.first_name && currentPath === '/profil-olustur') {
     const redirectUrl = new URL('/', request.url)
-    const redirectResponse = NextResponse.redirect(redirectUrl, { request })
+    const redirectResponse = NextResponse.redirect(redirectUrl)
     // Cookie'leri kopyala
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
@@ -116,7 +116,7 @@ export async function updateSession(request: NextRequest) {
     currentPath !== '/profil-olustur'
   ) {
     const redirectUrl = new URL('/panel', request.url)
-    const redirectResponse = NextResponse.redirect(redirectUrl, { request })
+    const redirectResponse = NextResponse.redirect(redirectUrl)
     // Cookie'leri kopyala
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
@@ -127,7 +127,7 @@ export async function updateSession(request: NextRequest) {
   // Senaryo 4: Esnaf değilse (is_provider === false) ve panele girmeye çalışıyorsa, ana sayfaya yönlendir
   if (profile?.is_provider === false && currentPath.startsWith('/panel')) {
     const redirectUrl = new URL('/', request.url)
-    const redirectResponse = NextResponse.redirect(redirectUrl, { request })
+    const redirectResponse = NextResponse.redirect(redirectUrl)
     // Cookie'leri kopyala
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
