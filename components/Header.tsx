@@ -1,7 +1,10 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Menu, User, LogOut, LayoutDashboard, Settings } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,131 +13,117 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { HeaderMobileMenu } from './HeaderMobileMenu'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
-// Çıkış Yap (Sign Out) Server Action
-async function signOut() {
-  'use server'
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/')
-}
+export default function Header() {
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
-export async function Header() {
-  // Supabase client'ı oluştur (cookie'leri okuyacak)
-  const supabase = await createClient()
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+      } catch (error) {
+        console.error('Header Auth Hatası (Önemsiz):', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkUser()
+  }, [])
 
-  // Kullanıcı session'ını kontrol et
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // Eğer session varsa, profil bilgilerini çek
-  let profile = null
-  if (session?.user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, avatar_url')
-      .eq('id', session.user.id)
-      .single()
-    profile = data
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/'
   }
 
-  const userInitials = (profile?.first_name?.[0] || '') + (profile?.last_name?.[0] || '')
-
   return (
-    <header className="border-b bg-background sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo - Sol Taraf */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              {/* İkon: A Harfi */}
-              <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition-colors">
-                <span className="text-white font-bold text-xl">A</span>
-              </div>
+    <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="container flex h-16 items-center justify-between px-4 mx-auto">
+        
+        {/* 1. Logo */}
+        <Link href="/" className="flex items-center space-x-2">
+          <span className="text-xl md:text-2xl font-black tracking-tight text-indigo-600">
+            ANTALYA USTASI
+          </span>
+        </Link>
 
-              {/* İsim ve Slogan */}
-              <div className="flex flex-col">
-                <span className="text-xl font-extrabold tracking-tight text-gray-900 leading-none">
-                  ANTALYA USTASI
-                </span>
-                <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase mt-0.5">
-                  ŞEHRİN EN İYİLERİ
-                </span>
-              </div>
-            </Link>
-          </div>
+        {/* 2. Masaüstü Navigasyon */}
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+          <Link href="/" className="hover:text-indigo-600 transition-colors">Ana Sayfa</Link>
+          <Link href="/hizmetler" className="hover:text-indigo-600 transition-colors">Hizmetler</Link>
+          <Link href="/nasil-calisir" className="hover:text-indigo-600 transition-colors">Nasıl Çalışır?</Link>
+        </nav>
 
-          {/* Desktop Navigation - Sağ Taraf */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Ana Sayfa
-            </Link>
-            <Link
-              href="/nasil-calisir"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Nasıl Çalışır?
-            </Link>
-            <Link
-              href="/kategoriler"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Kategoriler
-            </Link>
-
-            {/* Session Kontrolü */}
-            {session ? (
-              // Giriş Yapmışsa: Avatar Menüsü
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="rounded-full">
-                    <Avatar>
-                      <AvatarImage src={profile?.avatar_url || undefined} />
-                      <AvatarFallback>{userInitials || 'U'}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/panel/profil">Profilim</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <form action={signOut}>
-                    <DropdownMenuItem asChild>
-                      <button type="submit" className="w-full text-left cursor-pointer">
-                        Çıkış Yap
-                      </button>
-                    </DropdownMenuItem>
-                  </form>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              // Ziyaretçiyse: Giriş/Kayıt Butonları
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/kayit-ol">Kayıt Ol</Link>
+        {/* 3. Sağ Taraf (Auth) */}
+        <div className="flex items-center gap-4">
+          {loading ? (
+             <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full border bg-gray-100">
+                  <User className="h-5 w-5 text-gray-600" />
                 </Button>
-                <Button variant="ghost" asChild>
-                  <Link href="/giris-yap">Giriş Yap</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/hizmet-ver">Hizmet Ver</Link>
-                </Button>
-              </>
-            )}
-          </nav>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">Hesabım</p>
+                    <p className="text-xs leading-none text-muted-foreground truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/panel/profil" className="cursor-pointer"><LayoutDashboard className="mr-2 h-4 w-4"/> Esnaf Paneli</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/panel/ayarlar" className="cursor-pointer"><Settings className="mr-2 h-4 w-4"/> Ayarlar</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" /> Çıkış Yap
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="hidden md:flex items-center gap-2">
+              <Button variant="ghost" asChild>
+                <Link href="/giris-yap">Giriş Yap</Link>
+              </Button>
+              <Button className="bg-indigo-600 hover:bg-indigo-700" asChild>
+                <Link href="/profil-olustur">Usta Kaydı</Link>
+              </Button>
+            </div>
+          )}
 
-          {/* Mobile Navigation */}
+          {/* 4. Mobil Menü (Hamburger) */}
           <div className="md:hidden">
-            <HeaderMobileMenu session={session} profile={profile} />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col gap-4 mt-8">
+                  <Link href="/" className="text-lg font-medium">Ana Sayfa</Link>
+                  <Link href="/hizmetler" className="text-lg font-medium">Hizmetler</Link>
+                  <Link href="/nasil-calisir" className="text-lg font-medium">Nasıl Çalışır?</Link>
+                  <div className="h-px bg-gray-200 my-2" />
+                  {!user && (
+                    <>
+                      <Link href="/giris-yap" className="text-lg font-medium text-indigo-600">Giriş Yap</Link>
+                      <Link href="/profil-olustur" className="text-lg font-medium text-indigo-600">Kayıt Ol</Link>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
