@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Antalya Ustası | En İyi Esnafları Bul",
-  description: "Antalya'nın güvenilir ustalarını, hizmetlerini ve fiyatlarını karşılaştır.",
+  description: "Antalya'nın güvenilir ustaları burada.",
 };
 
 export default function RootLayout({
