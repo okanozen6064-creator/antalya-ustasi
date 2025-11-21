@@ -185,7 +185,22 @@ export default function ProRegisterPage() {
       })
 
       if (authError || !authData.user) {
-        setErrorMessage(authError?.message || 'Kullanıcı oluşturulamadı!')
+        // Hata mesajlarını Türkçe ve açıklayıcı hale getir
+        let userFriendlyMessage = authError?.message || 'Kullanıcı oluşturulamadı!'
+        
+        if (authError) {
+          if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
+            userFriendlyMessage = 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yap sayfasından giriş yapın veya farklı bir e-posta adresi kullanın.'
+          } else if (authError.message.includes('Invalid email')) {
+            userFriendlyMessage = 'Geçersiz e-posta adresi. Lütfen doğru bir e-posta adresi girin.'
+          } else if (authError.message.includes('Password')) {
+            userFriendlyMessage = 'Şifre çok kısa. Şifreniz en az 6 karakter olmalıdır.'
+          } else if (authError.message.includes('email')) {
+            userFriendlyMessage = 'E-posta adresi ile ilgili bir hata oluştu. Lütfen tekrar deneyin.'
+          }
+        }
+        
+        setErrorMessage(userFriendlyMessage)
         setLoading(false)
         return
       }
@@ -247,7 +262,21 @@ export default function ProRegisterPage() {
       router.push(`/register/success?email=${encodeURIComponent(formData.email)}`)
     } catch (err: any) {
       console.error('Beklenmeyen hata:', err)
-      setErrorMessage(err.message || 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.')
+      
+      // Beklenmeyen hatalar için de açıklayıcı mesaj
+      let userFriendlyMessage = 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.'
+      
+      if (err.message) {
+        if (err.message.includes('network') || err.message.includes('fetch')) {
+          userFriendlyMessage = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.'
+        } else if (err.message.includes('timeout')) {
+          userFriendlyMessage = 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.'
+        } else {
+          userFriendlyMessage = err.message
+        }
+      }
+      
+      setErrorMessage(userFriendlyMessage)
       setLoading(false)
     }
   }

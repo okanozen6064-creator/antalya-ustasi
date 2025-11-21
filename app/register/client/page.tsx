@@ -70,7 +70,22 @@ export default function ClientRegisterPage() {
 
       if (error) {
         console.error('Kayıt hatası:', error)
-        setErrorMessage(error.message)
+        
+        // Hata mesajlarını Türkçe ve açıklayıcı hale getir
+        let userFriendlyMessage = error.message
+        
+        // Supabase hata kodlarına göre özel mesajlar
+        if (error.message.includes('already registered') || error.message.includes('already exists') || error.message.includes('User already registered')) {
+          userFriendlyMessage = 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yap sayfasından giriş yapın veya farklı bir e-posta adresi kullanın.'
+        } else if (error.message.includes('Invalid email')) {
+          userFriendlyMessage = 'Geçersiz e-posta adresi. Lütfen doğru bir e-posta adresi girin.'
+        } else if (error.message.includes('Password')) {
+          userFriendlyMessage = 'Şifre çok kısa. Şifreniz en az 6 karakter olmalıdır.'
+        } else if (error.message.includes('email')) {
+          userFriendlyMessage = 'E-posta adresi ile ilgili bir hata oluştu. Lütfen tekrar deneyin.'
+        }
+        
+        setErrorMessage(userFriendlyMessage)
         setLoading(false)
         return
       }
@@ -96,7 +111,21 @@ export default function ClientRegisterPage() {
       router.push(`/register/success?email=${encodeURIComponent(email)}`)
     } catch (err: any) {
       console.error('Beklenmeyen hata:', err)
-      setErrorMessage(err.message || 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.')
+      
+      // Beklenmeyen hatalar için de açıklayıcı mesaj
+      let userFriendlyMessage = 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.'
+      
+      if (err.message) {
+        if (err.message.includes('network') || err.message.includes('fetch')) {
+          userFriendlyMessage = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.'
+        } else if (err.message.includes('timeout')) {
+          userFriendlyMessage = 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.'
+        } else {
+          userFriendlyMessage = err.message
+        }
+      }
+      
+      setErrorMessage(userFriendlyMessage)
       setLoading(false)
     }
   }
