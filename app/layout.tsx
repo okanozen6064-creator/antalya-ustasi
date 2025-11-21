@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import Footer from "@/components/Footer";
-import { AutoLogoutProvider } from "@/components/providers/AutoLogoutProvider";
+import { DemoModal } from "@/components/common/DemoModal";
+import { ConstructionAlert } from "@/components/common/ConstructionAlert";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,16 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    template: '%s | Antalya Ustası',
-    default: 'Antalya Ustası - Şehrin En İyi Hizmet Platformu',
-  },
-  description:
-    "Antalya'da elektrikçiden nakliyeye, boyacıdan temizliğe aradığınız tüm ustalar ve hizmetler bir tık uzağınızda. Ücretsiz teklif alın.",
-  icons: {
-    icon: '/marka-logo.png', // Senin logon favicon olsun
-  },
-}
+  title: "Antalya Ustası | En İyi Esnafları Bul",
+  description: "Antalya'nın güvenilir ustaları burada.",
+};
 
 export default function RootLayout({
   children,
@@ -33,16 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AutoLogoutProvider />
-        <Header />
-        <main className="flex-grow min-h-screen">
-          {children}
-        </main>
-        <Footer />
+        <ConstructionAlert />
+        {children}
+        <DemoModal />
       </body>
     </html>
   );
