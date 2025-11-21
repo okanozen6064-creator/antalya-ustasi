@@ -17,7 +17,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert'
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PageContainer from '@/components/PageContainer'
 
@@ -31,133 +31,160 @@ interface District {
   name: string
 }
 
+interface FormData {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  phone: string
+  businessName: string
+  taxNumber: string
+  selectedServices: string[]
+  selectedDistricts: number[]
+}
+
 export default function ProRegisterPage() {
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
-  const [businessName, setBusinessName] = useState('')
-  const [taxNumber, setTaxNumber] = useState('')
-  const [selectedServices, setSelectedServices] = useState<string[]>([])
-  const [selectedDistricts, setSelectedDistricts] = useState<number[]>([])
+  const [currentStep, setCurrentStep] = useState(1)
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    phone: '',
+    businessName: '',
+    taxNumber: '',
+    selectedServices: [],
+    selectedDistricts: [],
+  })
   const [services, setServices] = useState<Service[]>([])
   const [districts, setDistricts] = useState<District[]>([])
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  // Verileri çek (Server-side benzeri, client-side)
+  // Verileri çek
   useEffect(() => {
     const fetchData = async () => {
       try {
         const supabase = createClient()
         
-        // Hizmetleri çek
-        const { data: servicesData, error: servicesError } = await supabase
-          .from('services')
-          .select('id, name')
-          .order('name', { ascending: true })
+        const [servicesResult, districtsResult] = await Promise.all([
+          supabase.from('services').select('id, name').order('name', { ascending: true }),
+          supabase.from('antalya_districts').select('id, name').order('name', { ascending: true }),
+        ])
 
-        if (servicesError) {
-          console.error('Hizmetler yüklenirken hata:', servicesError)
-          setErrorMessage('Hizmetler yüklenirken bir hata oluştu.')
+        if (servicesResult.error) {
+          console.error('Hizmetler yüklenirken hata:', servicesResult.error)
         } else {
-          setServices(servicesData || [])
+          setServices(servicesResult.data || [])
         }
 
-        // İlçeleri çek
-        const { data: districtsData, error: districtsError } = await supabase
-          .from('antalya_districts')
-          .select('id, name')
-          .order('name', { ascending: true })
-
-        if (districtsError) {
-          console.error('İlçeler yüklenirken hata:', districtsError)
-          setErrorMessage('İlçeler yüklenirken bir hata oluştu.')
+        if (districtsResult.error) {
+          console.error('İlçeler yüklenirken hata:', districtsResult.error)
         } else {
-          setDistricts(districtsData || [])
+          setDistricts(districtsResult.data || [])
         }
       } catch (err) {
         console.error('Beklenmeyen hata:', err)
-        setErrorMessage('Veriler yüklenirken bir hata oluştu.')
       }
     }
 
     fetchData()
   }, [])
 
+  const updateFormData = (field: keyof FormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
   const toggleService = (serviceId: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(serviceId)
-        ? prev.filter((id) => id !== serviceId)
-        : [...prev, serviceId]
-    )
+    setFormData((prev) => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceId)
+        ? prev.selectedServices.filter((id) => id !== serviceId)
+        : [...prev.selectedServices, serviceId],
+    }))
   }
 
   const toggleDistrict = (districtId: number) => {
-    setSelectedDistricts((prev) =>
-      prev.includes(districtId)
-        ? prev.filter((id) => id !== districtId)
-        : [...prev, districtId]
-    )
+    setFormData((prev) => ({
+      ...prev,
+      selectedDistricts: prev.selectedDistricts.includes(districtId)
+        ? prev.selectedDistricts.filter((id) => id !== districtId)
+        : [...prev.selectedDistricts, districtId],
+    }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const validateStep = (step: number): boolean => {
+    setErrorMessage('')
+    
+    if (step === 1) {
+      if (!formData.firstName.trim() || !formData.lastName.trim()) {
+        setErrorMessage('Ad ve Soyad gereklidir!')
+        return false
+      }
+      if (!formData.email.trim()) {
+        setErrorMessage('E-posta gereklidir!')
+        return false
+      }
+      if (formData.password.length < 6) {
+        setErrorMessage('Şifre en az 6 karakter olmalıdır!')
+        return false
+      }
+    }
+    
+    if (step === 2) {
+      if (!formData.taxNumber.trim()) {
+        setErrorMessage('Vergi Numarası gereklidir!')
+        return false
+      }
+      if (formData.selectedServices.length === 0) {
+        setErrorMessage('En az bir hizmet seçmelisiniz!')
+        return false
+      }
+      if (formData.selectedDistricts.length === 0) {
+        setErrorMessage('En az bir ilçe seçmelisiniz!')
+        return false
+      }
+    }
+    
+    return true
+  }
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 3))
+    }
+  }
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1))
+    setErrorMessage('')
+  }
+
+  const handleSubmit = async () => {
+    if (!validateStep(2)) return
+
     setErrorMessage('')
     setLoading(true)
-
-    // Validasyon
-    if (!firstName.trim() || !lastName.trim()) {
-      setErrorMessage('Ad ve Soyad gereklidir!')
-      setLoading(false)
-      return
-    }
-
-    if (!taxNumber.trim()) {
-      setErrorMessage('Vergi Numarası gereklidir!')
-      setLoading(false)
-      return
-    }
-
-    if (selectedServices.length === 0) {
-      setErrorMessage('En az bir hizmet seçmelisiniz!')
-      setLoading(false)
-      return
-    }
-
-    if (selectedDistricts.length === 0) {
-      setErrorMessage('En az bir ilçe seçmelisiniz!')
-      setLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setErrorMessage('Şifre en az 6 karakter olmalıdır!')
-      setLoading(false)
-      return
-    }
 
     try {
       const supabase = createClient()
 
-      // ADIM 1: Kullanıcıyı oluştur (is_provider: true metadata ile)
+      // ADIM 1: Kullanıcıyı oluştur
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         options: {
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            phone: phone,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
             is_provider: true,
           },
         },
       })
 
       if (authError || !authData.user) {
-        console.error('Kullanıcı oluşturma hatası:', authError)
         setErrorMessage(authError?.message || 'Kullanıcı oluşturulamadı!')
         setLoading(false)
         return
@@ -169,24 +196,23 @@ export default function ProRegisterPage() {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          first_name: firstName,
-          last_name: lastName,
-          phone: phone || null,
-          business_name: businessName || null,
-          tax_number: taxNumber,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone || null,
+          business_name: formData.businessName || null,
+          tax_number: formData.taxNumber,
           is_provider: true,
         })
         .eq('id', userId)
 
       if (profileError) {
-        console.error('Profil güncelleme hatası:', profileError)
         setErrorMessage(`Profil güncellenirken hata: ${profileError.message}`)
         setLoading(false)
         return
       }
 
-      // ADIM 3: Seçilen hizmetleri provider_services tablosuna ekle
-      const serviceInserts = selectedServices.map((serviceId) => ({
+      // ADIM 3: Hizmetleri ekle
+      const serviceInserts = formData.selectedServices.map((serviceId) => ({
         provider_id: userId,
         service_id: serviceId,
       }))
@@ -196,14 +222,13 @@ export default function ProRegisterPage() {
         .insert(serviceInserts)
 
       if (servicesError) {
-        console.error('Hizmet ekleme hatası:', servicesError)
         setErrorMessage(`Hizmetler eklenirken hata: ${servicesError.message}`)
         setLoading(false)
         return
       }
 
-      // ADIM 4: Seçilen ilçeleri provider_locations tablosuna ekle
-      const locationInserts = selectedDistricts.map((districtId) => ({
+      // ADIM 4: İlçeleri ekle
+      const locationInserts = formData.selectedDistricts.map((districtId) => ({
         provider_id: userId,
         district_id: districtId,
       }))
@@ -213,20 +238,21 @@ export default function ProRegisterPage() {
         .insert(locationInserts)
 
       if (locationsError) {
-        console.error('İlçe ekleme hatası:', locationsError)
         setErrorMessage(`İlçeler eklenirken hata: ${locationsError.message}`)
         setLoading(false)
         return
       }
 
-      // Başarılı - success sayfasına yönlendir
-      router.push(`/register/success?email=${encodeURIComponent(email)}`)
+      // Başarılı
+      router.push(`/register/success?email=${encodeURIComponent(formData.email)}`)
     } catch (err: any) {
       console.error('Beklenmeyen hata:', err)
       setErrorMessage(err.message || 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.')
       setLoading(false)
     }
   }
+
+  const progressPercentage = (currentStep / 3) * 100
 
   return (
     <PageContainer>
@@ -237,23 +263,41 @@ export default function ProRegisterPage() {
               Antalya'nın En İyi Ustaları Arasına Katılın
             </CardTitle>
             <p className="text-center text-gray-600 mt-2">
-              Profesyonel kayıt formunu doldurun ve müşterilere ulaşın
+              Profesyonel kayıt formunu adım adım doldurun
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {errorMessage && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Hata</AlertTitle>
-                  <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-              )}
+            {/* Progress Bar */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Adım {currentStep} / 3
+                </span>
+                <span className="text-sm text-gray-500">
+                  {Math.round(progressPercentage)}% Tamamlandı
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </div>
 
-              {/* Kişisel Bilgiler */}
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Hata</AlertTitle>
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Adım 1: Kimlik Bilgileri */}
+            {currentStep === 1 && (
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
-                  Kişisel Bilgiler
+                  Kimlik Bilgileri
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -262,8 +306,8 @@ export default function ProRegisterPage() {
                       id="firstName"
                       type="text"
                       placeholder="Adınız"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      value={formData.firstName}
+                      onChange={(e) => updateFormData('firstName', e.target.value)}
                       required
                     />
                   </div>
@@ -273,8 +317,8 @@ export default function ProRegisterPage() {
                       id="lastName"
                       type="text"
                       placeholder="Soyadınız"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      value={formData.lastName}
+                      onChange={(e) => updateFormData('lastName', e.target.value)}
                       required
                     />
                   </div>
@@ -286,8 +330,8 @@ export default function ProRegisterPage() {
                       id="email"
                       type="email"
                       placeholder="ornek@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={(e) => updateFormData('email', e.target.value)}
                       required
                     />
                   </div>
@@ -297,8 +341,8 @@ export default function ProRegisterPage() {
                       id="phone"
                       type="tel"
                       placeholder="05XX XXX XX XX"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      value={formData.phone}
+                      onChange={(e) => updateFormData('phone', e.target.value)}
                     />
                   </div>
                 </div>
@@ -308,19 +352,22 @@ export default function ProRegisterPage() {
                     id="password"
                     type="password"
                     placeholder="En az 6 karakter"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => updateFormData('password', e.target.value)}
                     required
                     minLength={6}
                   />
                 </div>
               </div>
+            )}
 
-              {/* İşletme Bilgileri */}
-              <div className="space-y-4">
+            {/* Adım 2: İş Bilgileri */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
                 <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
-                  İşletme Bilgileri
+                  İş Bilgileri
                 </h3>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="businessName">İşletme Adı</Label>
@@ -328,8 +375,8 @@ export default function ProRegisterPage() {
                       id="businessName"
                       type="text"
                       placeholder="İşletme adınız (opsiyonel)"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
+                      value={formData.businessName}
+                      onChange={(e) => updateFormData('businessName', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -338,92 +385,178 @@ export default function ProRegisterPage() {
                       id="taxNumber"
                       type="text"
                       placeholder="Vergi numaranız"
-                      value={taxNumber}
-                      onChange={(e) => setTaxNumber(e.target.value)}
+                      value={formData.taxNumber}
+                      onChange={(e) => updateFormData('taxNumber', e.target.value)}
                       required
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Uzmanlık Alanları */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
-                  Uzmanlık Alanları (Çoklu Seçim) *
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="flex items-center space-x-2 p-2 rounded hover:bg-white cursor-pointer"
-                      onClick={() => toggleService(service.id)}
-                    >
-                      <Checkbox
-                        id={`service-${service.id}`}
-                        checked={selectedServices.includes(service.id)}
-                        onCheckedChange={() => toggleService(service.id)}
-                      />
-                      <Label
-                        htmlFor={`service-${service.id}`}
-                        className="cursor-pointer text-sm font-normal"
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-800">
+                    Uzmanlık Alanları (Çoklu Seçim) *
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
+                    {services.map((service) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-white cursor-pointer"
+                        onClick={() => toggleService(service.id)}
                       >
-                        {service.name}
-                      </Label>
-                    </div>
-                  ))}
+                        <Checkbox
+                          id={`service-${service.id}`}
+                          checked={formData.selectedServices.includes(service.id)}
+                          onCheckedChange={() => toggleService(service.id)}
+                        />
+                        <Label
+                          htmlFor={`service-${service.id}`}
+                          className="cursor-pointer text-sm font-normal"
+                        >
+                          {service.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.selectedServices.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {formData.selectedServices.length} hizmet seçildi
+                    </p>
+                  )}
                 </div>
-                {selectedServices.length > 0 && (
-                  <p className="text-sm text-gray-600">
-                    {selectedServices.length} hizmet seçildi
-                  </p>
-                )}
-              </div>
 
-              {/* Hizmet Bölgesi */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
-                  Hizmet Bölgesi (Çoklu Seçim) *
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
-                  {districts.map((district) => (
-                    <div
-                      key={district.id}
-                      className="flex items-center space-x-2 p-2 rounded hover:bg-white cursor-pointer"
-                      onClick={() => toggleDistrict(district.id)}
-                    >
-                      <Checkbox
-                        id={`district-${district.id}`}
-                        checked={selectedDistricts.includes(district.id)}
-                        onCheckedChange={() => toggleDistrict(district.id)}
-                      />
-                      <Label
-                        htmlFor={`district-${district.id}`}
-                        className="cursor-pointer text-sm font-normal"
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-800">
+                    Hizmet Bölgesi (Çoklu Seçim) *
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
+                    {districts.map((district) => (
+                      <div
+                        key={district.id}
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-white cursor-pointer"
+                        onClick={() => toggleDistrict(district.id)}
                       >
-                        {district.name}
-                      </Label>
-                    </div>
-                  ))}
+                        <Checkbox
+                          id={`district-${district.id}`}
+                          checked={formData.selectedDistricts.includes(district.id)}
+                          onCheckedChange={() => toggleDistrict(district.id)}
+                        />
+                        <Label
+                          htmlFor={`district-${district.id}`}
+                          className="cursor-pointer text-sm font-normal"
+                        >
+                          {district.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.selectedDistricts.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {formData.selectedDistricts.length} ilçe seçildi
+                    </p>
+                  )}
                 </div>
-                {selectedDistricts.length > 0 && (
-                  <p className="text-sm text-gray-600">
-                    {selectedDistricts.length} ilçe seçildi
-                  </p>
-                )}
               </div>
+            )}
 
+            {/* Adım 3: Onay */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
+                  Kayıt Özeti
+                </h3>
+                
+                <div className="space-y-4 bg-gray-50 p-6 rounded-lg">
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Kişisel Bilgiler</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p><strong>Ad Soyad:</strong> {formData.firstName} {formData.lastName}</p>
+                      <p><strong>E-posta:</strong> {formData.email}</p>
+                      {formData.phone && <p><strong>Telefon:</strong> {formData.phone}</p>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">İşletme Bilgileri</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      {formData.businessName && <p><strong>İşletme Adı:</strong> {formData.businessName}</p>}
+                      <p><strong>Vergi Numarası:</strong> {formData.taxNumber}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Uzmanlık Alanları</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.selectedServices.map((serviceId) => {
+                        const service = services.find((s) => s.id === serviceId)
+                        return (
+                          <span key={serviceId} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+                            {service?.name}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Hizmet Bölgesi</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.selectedDistricts.map((districtId) => {
+                        const district = districts.find((d) => d.id === districtId)
+                        return (
+                          <span key={districtId} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                            {district?.name}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <Alert className="bg-indigo-50 border-indigo-200">
+                  <CheckCircle2 className="h-4 w-4 text-indigo-600" />
+                  <AlertDescription className="text-indigo-800">
+                    Bilgilerinizi kontrol edin. "Kaydı Tamamla" butonuna tıkladığınızda kayıt işlemi başlayacaktır.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            {/* Navigasyon Butonları */}
+            <div className="flex justify-between items-center mt-8 pt-6 border-t">
               <Button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                disabled={loading}
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 1 || loading}
+                className="flex items-center gap-2"
               >
-                {loading ? 'Kayıt Yapılıyor...' : 'Kayıt Ol ve Antalya Ustası Ol'}
+                <ChevronLeft className="w-4 h-4" />
+                Geri
               </Button>
-            </form>
+
+              {currentStep < 3 ? (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+                >
+                  İleri
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {loading ? 'Kayıt Yapılıyor...' : 'Kaydı Tamamla'}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
     </PageContainer>
   )
 }
-

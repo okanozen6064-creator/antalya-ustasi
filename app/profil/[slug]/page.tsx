@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Image from 'next/image'
 import { Star, Phone, CheckCircle } from 'lucide-react'
 import { QuoteRequestModal } from '@/components/QuoteRequestModal'
+import { CallButton } from '@/components/ui/CallButton'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
@@ -113,7 +114,10 @@ export default async function ProfileDetailPage({ params }: PageProps) {
         <Card className="p-6 md:p-10 shadow-xl bg-white/70 backdrop-blur-sm">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">{fullName}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">{fullName}</h1>
+                {provider.phone && <CallButton phoneNumber={provider.phone} />}
+              </div>
               <div className="flex items-center space-x-3 mb-4">
                 {/* Doğrulama Rozeti */}
                 {provider.is_verified && (

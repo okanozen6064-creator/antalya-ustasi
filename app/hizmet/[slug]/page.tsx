@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { QuoteRequestModal } from '@/components/QuoteRequestModal'
 import { RevealNumber } from '@/components/ui/RevealNumber'
+import { CallButton } from '@/components/ui/CallButton'
 import type { Metadata } from 'next'
 
 // ÖNBELLEĞİ KAPAT (Her F5'te taze veri çek)
@@ -196,6 +197,7 @@ export default async function ServicePage({
                         <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                           {provider.first_name} {provider.last_name}
                         </h3>
+                        {provider.phone && <CallButton phoneNumber={provider.phone} />}
                         {provider.is_verified && (
                           <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                             ✓ Onaylı
