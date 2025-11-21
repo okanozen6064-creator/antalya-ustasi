@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import PageContainer from '@/components/PageContainer'
+import { getURL } from '@/lib/utils'
 
 export default function ClientRegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -59,6 +60,7 @@ export default function ClientRegisterPage() {
         email,
         password,
         options: {
+          emailRedirectTo: `${getURL()}auth/callback`,
           data: {
             first_name: firstName,
             last_name: lastName,

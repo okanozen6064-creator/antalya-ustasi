@@ -20,6 +20,7 @@ import {
 import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PageContainer from '@/components/PageContainer'
+import { getURL } from '@/lib/utils'
 
 interface Service {
   id: string
@@ -175,6 +176,7 @@ export default function ProRegisterPage() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${getURL()}auth/callback`,
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
