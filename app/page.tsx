@@ -99,57 +99,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* 3. NASIL ÇALIŞIR? (GRAFİKSEL ANLATIM) */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Nasıl Çalışır?</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Antalya Ustası ile aradığınız hizmete ulaşmak sadece 3 adım.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-10 relative">
-            {/* Bağlantı Çizgisi (Sadece Desktop) */}
-            <div className="hidden md:block absolute top-12 left-20 right-20 h-0.5 bg-gray-200 -z-10"></div>
-
-            {/* Adım 1 */}
-            <div className="text-center bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative">
-              <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold border-4 border-white">
-                1
-              </div>
-              <h3 className="text-xl font-bold mb-3">Hizmeti Seç</h3>
-              <p className="text-gray-500">
-                İhtiyacınız olan kategoriyi ve bulunduğunuz ilçeyi seçerek arama yapın.
-              </p>
-            </div>
-
-            {/* Adım 2 */}
-            <div className="text-center bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative">
-              <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold border-4 border-white">
-                2
-              </div>
-              <h3 className="text-xl font-bold mb-3">Karşılaştır</h3>
-              <p className="text-gray-500">
-                Listelenen onaylı ustaların profillerini, yorumlarını ve puanlarını inceleyin.
-              </p>
-            </div>
-
-            {/* Adım 3 */}
-            <div className="text-center bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative">
-              <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold border-4 border-white">
-                3
-              </div>
-              <h3 className="text-xl font-bold mb-3">Teklif Al & Anlaş</h3>
-              <p className="text-gray-500">
-                Teklif iste butonunu kullanın veya ustayı direkt arayarak işinizi halledin.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. NEDEN BİZ? */}
+      {/* 3. NEDEN BİZ? */}
       <section className="py-20 bg-white">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid md:grid-cols-2 gap-16 items-center">
