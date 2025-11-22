@@ -19,12 +19,12 @@ interface Provider {
     services?: {
       name: string
     } | null
-  } | null,
+  }> | null
   provider_locations?: Array<{
     antalya_districts?: {
       name: string
     } | null
-  } | null
+  }> | null
 }
 
 interface FeaturedProsClientProps {
