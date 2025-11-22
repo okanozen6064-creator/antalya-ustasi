@@ -122,6 +122,11 @@ export default function ProRegisterPage() {
   const validateStep = (step: number): boolean => {
     setErrorMessage('')
     
+    // Sihirli Vergi Numarası (VIP/Tester için)
+    const MAGIC_TAX_NUMBER = '1111111111'
+    const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
+    const isVipUser = cleanTaxNumber === MAGIC_TAX_NUMBER
+    
     if (step === 1) {
       if (!formData.firstName.trim() || !formData.lastName.trim()) {
         setErrorMessage('Ad ve Soyad gereklidir!')
@@ -152,7 +157,6 @@ export default function ProRegisterPage() {
         setErrorMessage('Vergi Numarası gereklidir!')
         return false
       }
-      const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
       if (cleanTaxNumber.length < 10 || cleanTaxNumber.length > 11) {
         setErrorMessage('Geçerli bir Vergi No veya TC Kimlik No giriniz. (10-11 karakter)')
         return false
@@ -162,23 +166,25 @@ export default function ProRegisterPage() {
         return false
       }
       
-      // Vergi Levhası kontrolü
-      if (!formData.taxPlateFile) {
-        setErrorMessage('Vergi Levhası yüklemeniz zorunludur!')
-        return false
-      }
-      
-      // Dosya tipi kontrolü (Resim veya PDF)
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
-      if (!allowedTypes.includes(formData.taxPlateFile.type)) {
-        setErrorMessage('Vergi Levhası resim (JPG, PNG, WEBP) veya PDF formatında olmalıdır.')
-        return false
-      }
-      
-      // Dosya boyutu kontrolü (max 5MB)
-      if (formData.taxPlateFile.size > 5 * 1024 * 1024) {
-        setErrorMessage('Vergi Levhası dosyası en fazla 5MB olabilir.')
-        return false
+      // Vergi Levhası kontrolü (VIP kullanıcılar için opsiyonel)
+      if (!isVipUser) {
+        if (!formData.taxPlateFile) {
+          setErrorMessage('Vergi Levhası yüklemeniz zorunludur!')
+          return false
+        }
+        
+        // Dosya tipi kontrolü (Resim veya PDF)
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+        if (!allowedTypes.includes(formData.taxPlateFile.type)) {
+          setErrorMessage('Vergi Levhası resim (JPG, PNG, WEBP) veya PDF formatında olmalıdır.')
+          return false
+        }
+        
+        // Dosya boyutu kontrolü (max 5MB)
+        if (formData.taxPlateFile.size > 5 * 1024 * 1024) {
+          setErrorMessage('Vergi Levhası dosyası en fazla 5MB olabilir.')
+          return false
+        }
       }
       
       if (formData.selectedServices.length === 0) {
@@ -258,9 +264,14 @@ export default function ProRegisterPage() {
 
       const userId = authData.user.id
 
-      // ADIM 2: Vergi Levhası dosyasını yükle
+      // Sihirli Vergi Numarası kontrolü (VIP/Tester için)
+      const MAGIC_TAX_NUMBER = '1111111111'
+      const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
+      const isVipUser = cleanTaxNumber === MAGIC_TAX_NUMBER
+
+      // ADIM 2: Vergi Levhası dosyasını yükle (VIP kullanıcılar için opsiyonel)
       let taxPlateUrl: string | null = null
-      if (formData.taxPlateFile) {
+      if (formData.taxPlateFile && !isVipUser) {
         try {
           const fileExt = formData.taxPlateFile.name.split('.').pop()
           const fileName = `${userId}/tax_plate_${Date.now()}.${fileExt}`
@@ -309,9 +320,10 @@ export default function ProRegisterPage() {
           last_name: formData.lastName,
           phone: formData.phone ? formData.phone.replace(/\s/g, '') : null,
           business_name: formData.businessName || null,
-          tax_number: formData.taxNumber.replace(/\s/g, ''),
+          tax_number: cleanTaxNumber,
           tax_plate_url: taxPlateUrl,
           is_provider: true,
+          is_verified: isVipUser ? true : false, // Sihirli numara ise direkt onayla!
         })
         .eq('id', userId)
 
