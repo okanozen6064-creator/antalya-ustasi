@@ -41,6 +41,7 @@ interface FormData {
   phone: string
   businessName: string
   taxNumber: string
+  taxPlateFile: File | null
   selectedServices: string[]
   selectedDistricts: number[]
 }
@@ -55,6 +56,7 @@ export default function ProRegisterPage() {
     phone: '',
     businessName: '',
     taxNumber: '',
+    taxPlateFile: null,
     selectedServices: [],
     selectedDistricts: [],
   })
@@ -133,13 +135,52 @@ export default function ProRegisterPage() {
         setErrorMessage('Şifre en az 6 karakter olmalıdır!')
         return false
       }
+      // Telefon validasyonu (5 ile başlayan 10 haneli)
+      if (formData.phone.trim()) {
+        const phoneRegex = /^5[0-9]{9}$/
+        const cleanPhone = formData.phone.replace(/\s/g, '')
+        if (!phoneRegex.test(cleanPhone)) {
+          setErrorMessage('Telefon numarası 5 ile başlamalı ve 10 haneli olmalı (Örn: 5321234567).')
+          return false
+        }
+      }
     }
     
     if (step === 2) {
+      // Vergi Numarası validasyonu (10-11 karakter, sadece rakam)
       if (!formData.taxNumber.trim()) {
         setErrorMessage('Vergi Numarası gereklidir!')
         return false
       }
+      const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
+      if (cleanTaxNumber.length < 10 || cleanTaxNumber.length > 11) {
+        setErrorMessage('Geçerli bir Vergi No veya TC Kimlik No giriniz. (10-11 karakter)')
+        return false
+      }
+      if (!/^\d+$/.test(cleanTaxNumber)) {
+        setErrorMessage('Geçerli bir Vergi No veya TC Kimlik No giriniz. (Sadece rakam)')
+        return false
+      }
+      
+      // Vergi Levhası kontrolü
+      if (!formData.taxPlateFile) {
+        setErrorMessage('Vergi Levhası yüklemeniz zorunludur!')
+        return false
+      }
+      
+      // Dosya tipi kontrolü (Resim veya PDF)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+      if (!allowedTypes.includes(formData.taxPlateFile.type)) {
+        setErrorMessage('Vergi Levhası resim (JPG, PNG, WEBP) veya PDF formatında olmalıdır.')
+        return false
+      }
+      
+      // Dosya boyutu kontrolü (max 5MB)
+      if (formData.taxPlateFile.size > 5 * 1024 * 1024) {
+        setErrorMessage('Vergi Levhası dosyası en fazla 5MB olabilir.')
+        return false
+      }
+      
       if (formData.selectedServices.length === 0) {
         setErrorMessage('En az bir hizmet seçmelisiniz!')
         return false
@@ -217,15 +258,59 @@ export default function ProRegisterPage() {
 
       const userId = authData.user.id
 
-      // ADIM 2: Profiles tablosunu güncelle
+      // ADIM 2: Vergi Levhası dosyasını yükle
+      let taxPlateUrl: string | null = null
+      if (formData.taxPlateFile) {
+        try {
+          const fileExt = formData.taxPlateFile.name.split('.').pop()
+          const fileName = `${userId}/tax_plate_${Date.now()}.${fileExt}`
+          const filePath = `verification_docs/${fileName}`
+
+          // Storage'a yükle
+          const { error: uploadError } = await supabase.storage
+            .from('verification_docs')
+            .upload(filePath, formData.taxPlateFile, {
+              cacheControl: '3600',
+              upsert: false,
+            })
+
+          if (uploadError) {
+            console.error('Vergi levhası yükleme hatası:', uploadError)
+            setErrorMessage(`Vergi levhası yüklenirken hata: ${uploadError.message}`)
+            setLoading(false)
+            return
+          }
+
+          // Public URL'i al
+          const { data: urlData } = supabase.storage
+            .from('verification_docs')
+            .getPublicUrl(filePath)
+
+          if (!urlData?.publicUrl) {
+            setErrorMessage('Vergi levhası URL\'i alınamadı.')
+            setLoading(false)
+            return
+          }
+
+          taxPlateUrl = urlData.publicUrl
+        } catch (uploadErr: any) {
+          console.error('Vergi levhası yükleme hatası:', uploadErr)
+          setErrorMessage(`Vergi levhası yüklenirken hata: ${uploadErr.message}`)
+          setLoading(false)
+          return
+        }
+      }
+
+      // ADIM 3: Profiles tablosunu güncelle
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: formData.firstName,
           last_name: formData.lastName,
-          phone: formData.phone || null,
+          phone: formData.phone ? formData.phone.replace(/\s/g, '') : null,
           business_name: formData.businessName || null,
-          tax_number: formData.taxNumber,
+          tax_number: formData.taxNumber.replace(/\s/g, ''),
+          tax_plate_url: taxPlateUrl,
           is_provider: true,
         })
         .eq('id', userId)
@@ -236,7 +321,7 @@ export default function ProRegisterPage() {
         return
       }
 
-      // ADIM 3: Hizmetleri ekle
+      // ADIM 4: Hizmetleri ekle
       const serviceInserts = formData.selectedServices.map((serviceId) => ({
         provider_id: userId,
         service_id: serviceId,
@@ -252,7 +337,7 @@ export default function ProRegisterPage() {
         return
       }
 
-      // ADIM 4: İlçeleri ekle
+      // ADIM 5: İlçeleri ekle
       const locationInserts = formData.selectedDistricts.map((districtId) => ({
         provider_id: userId,
         district_id: districtId,
@@ -379,10 +464,17 @@ export default function ProRegisterPage() {
                     <Input
                       id="phone"
                       type="tel"
-                      placeholder="05XX XXX XX XX"
+                      placeholder="5321234567"
                       value={formData.phone}
-                      onChange={(e) => updateFormData('phone', e.target.value)}
+                      onChange={(e) => {
+                        // Sadece rakam ve boşluk kabul et
+                        const value = e.target.value.replace(/[^\d\s]/g, '')
+                        updateFormData('phone', value)
+                      }}
                     />
+                    <p className="text-xs text-gray-500">
+                      Başına 0 yazmayın. Örn: 5321234567
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -419,16 +511,48 @@ export default function ProRegisterPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="taxNumber">Vergi Numarası *</Label>
+                    <Label htmlFor="taxNumber">Vergi Numarası / TC Kimlik No *</Label>
                     <Input
                       id="taxNumber"
                       type="text"
-                      placeholder="Vergi numaranız"
+                      placeholder="Vergi numaranız veya TC Kimlik No"
                       value={formData.taxNumber}
-                      onChange={(e) => updateFormData('taxNumber', e.target.value)}
+                      onChange={(e) => {
+                        // Sadece rakam kabul et
+                        const value = e.target.value.replace(/\D/g, '')
+                        updateFormData('taxNumber', value)
+                      }}
+                      maxLength={11}
                       required
                     />
+                    <p className="text-xs text-gray-500">
+                      10-11 karakter, sadece rakam
+                    </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="taxPlate">
+                    Vergi Levhası Yükle * <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="taxPlate"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      updateFormData('taxPlateFile', file)
+                    }}
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    Onay süreci için vergi levhanızın fotoğrafını yüklemeniz zorunludur. (JPG, PNG, WEBP veya PDF, max 5MB)
+                  </p>
+                  {formData.taxPlateFile && (
+                    <p className="text-sm text-green-600 mt-1">
+                      ✓ Dosya seçildi: {formData.taxPlateFile.name} ({(formData.taxPlateFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -519,6 +643,9 @@ export default function ProRegisterPage() {
                     <div className="space-y-1 text-sm text-gray-600">
                       {formData.businessName && <p><strong>İşletme Adı:</strong> {formData.businessName}</p>}
                       <p><strong>Vergi Numarası:</strong> {formData.taxNumber}</p>
+                      {formData.taxPlateFile && (
+                        <p><strong>Vergi Levhası:</strong> {formData.taxPlateFile.name} ({(formData.taxPlateFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+                      )}
                     </div>
                   </div>
 
