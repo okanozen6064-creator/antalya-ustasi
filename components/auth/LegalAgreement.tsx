@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface LegalAgreementProps {
   onAccept: (accepted: boolean) => void
@@ -132,11 +131,12 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget
-    const isScrolledToBottom =
-      target.scrollHeight - target.scrollTop <= target.clientHeight + 10 // 10px tolerans
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
 
-    setCanAccept(isScrolledToBottom)
+    // Kullanıcı en alta 10px yaklaştıysa okudu say (Tolerans)
+    if (scrollHeight - scrollTop - clientHeight < 10) {
+      setCanAccept(true)
+    }
   }
 
   const handleAccept = () => {
@@ -156,10 +156,8 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
   // Modal açıldığında scroll'u en üste al
   useEffect(() => {
     if (open && scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-      if (scrollElement) {
-        scrollElement.scrollTop = 0
-      }
+      scrollAreaRef.current.scrollTop = 0
+      setCanAccept(false)
     }
   }, [open])
 
@@ -209,15 +207,15 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea
+          <div
             ref={scrollAreaRef}
-            className="h-64 w-full rounded-md border p-4"
+            className="h-[400px] overflow-y-auto border p-4 rounded-md"
             onScroll={handleScroll}
           >
             <div className="whitespace-pre-line text-sm leading-relaxed text-gray-800">
               {LEGAL_TEXT}
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
