@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -127,39 +127,24 @@ Bu sözleşmeyi kabul ederek, yukarıdaki tüm hükümleri okuduğunuzu, anladı
 export function LegalAgreement({ onAccept }: LegalAgreementProps) {
   const [open, setOpen] = useState(false)
   const [accepted, setAccepted] = useState(false)
-  const [canAccept, setCanAccept] = useState(false)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-
-    // Kullanıcı en alta 10px yaklaştıysa okudu say (Tolerans)
-    if (scrollHeight - scrollTop - clientHeight < 10) {
-      setCanAccept(true)
-    }
-  }
+  const [modalCheckboxChecked, setModalCheckboxChecked] = useState(false)
 
   const handleAccept = () => {
+    if (!modalCheckboxChecked) return // Checkbox işaretli değilse buton çalışmasın
+    
     setAccepted(true)
     onAccept(true)
     setOpen(false)
+    setModalCheckboxChecked(false) // Modal kapandığında checkbox'ı sıfırla
   }
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     if (!newOpen) {
-      // Modal kapandığında scroll durumunu sıfırla
-      setCanAccept(false)
+      // Modal kapandığında checkbox'ı sıfırla
+      setModalCheckboxChecked(false)
     }
   }
-
-  // Modal açıldığında scroll'u en üste al
-  useEffect(() => {
-    if (open && scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = 0
-      setCanAccept(false)
-    }
-  }, [open])
 
   return (
     <div className="space-y-2">
@@ -203,17 +188,29 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Kullanıcı Sözleşmesi ve KVKK Aydınlatma Metni</DialogTitle>
             <DialogDescription>
-              Lütfen aşağıdaki metni sonuna kadar okuyunuz. Onaylamak için en alta scroll etmeniz gerekmektedir.
+              Lütfen aşağıdaki metni sonuna kadar okuyunuz.
             </DialogDescription>
           </DialogHeader>
 
-          <div
-            ref={scrollAreaRef}
-            className="h-[400px] overflow-y-auto border p-4 rounded-md"
-            onScroll={handleScroll}
-          >
+          <div className="h-[400px] overflow-y-auto border p-4 rounded-md">
             <div className="whitespace-pre-line text-sm leading-relaxed text-gray-800">
               {LEGAL_TEXT}
+            </div>
+            
+            {/* Metnin en altına checkbox ekle */}
+            <div className="mt-4 pt-4 border-t flex items-start space-x-2">
+              <Checkbox
+                id="modal-legal-checkbox"
+                checked={modalCheckboxChecked}
+                onCheckedChange={(checked) => setModalCheckboxChecked(checked === true)}
+                className="mt-1"
+              />
+              <label
+                htmlFor="modal-legal-checkbox"
+                className="text-sm text-gray-700 cursor-pointer leading-relaxed flex-1"
+              >
+                Aydınlatma metnini ve sözleşmeyi okudum, anladım ve onaylıyorum.
+              </label>
             </div>
           </div>
 
@@ -223,7 +220,7 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
               variant="outline"
               onClick={() => {
                 setOpen(false)
-                setCanAccept(false)
+                setModalCheckboxChecked(false)
               }}
             >
               Kapat
@@ -231,10 +228,10 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
             <Button
               type="button"
               onClick={handleAccept}
-              disabled={!canAccept}
+              disabled={!modalCheckboxChecked}
               className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Okudum ve Kabul Ediyorum
+              Onayla ve Devam Et
             </Button>
           </div>
         </DialogContent>

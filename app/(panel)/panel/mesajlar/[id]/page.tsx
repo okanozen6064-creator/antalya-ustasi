@@ -60,11 +60,11 @@ export default function ChatDetailPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Scroll'u en alta indir
-  const scrollToBottom = () => {
+  // Scroll'u en alta indir (hem smooth hem instant)
+  const scrollToBottom = (instant = false) => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+      messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' })
+    }, instant ? 0 : 100)
   }
 
   // Textarea otomatik büyüme
@@ -163,14 +163,16 @@ export default function ChatDetailPage() {
         console.warn('Mesajlar çekilemedi:', messagesError)
         setMessages([])
       } else {
-        setMessages(
-          (messagesData || []).map((msg: any) => ({
-            ...msg,
-            sender_profile: msg.sender_profile || null,
-          }))
-        )
-        // Mesajlar yüklendikten sonra scroll yap
-        scrollToBottom()
+        // Supabase'den gelen sender_profile bazen array olabilir, güvenli şekilde al
+        const safeMessages = (messagesData || []).map((msg: any) => ({
+          ...msg,
+          sender_profile: Array.isArray(msg.sender_profile)
+            ? msg.sender_profile[0]
+            : msg.sender_profile || null,
+        }))
+        setMessages(safeMessages)
+        // Mesajlar yüklendikten sonra scroll yap (instant)
+        scrollToBottom(true)
       }
     } catch (err: any) {
       console.error('Hata:', err)
@@ -185,7 +187,7 @@ export default function ChatDetailPage() {
 
     fetchMessages()
 
-    // Realtime aboneliği
+    // Realtime aboneliği - Yeni mesajları dinle
     const supabase = createClient()
     const channel = supabase
       .channel(`job-messages-${requestId}`)
@@ -198,23 +200,53 @@ export default function ChatDetailPage() {
           filter: `job_request_id=eq.${requestId}`,
         },
         async (payload) => {
+          // Mesaj zaten listede var mı kontrol et (duplicate önleme)
+          setMessages((prev) => {
+            const exists = prev.some((msg) => msg.id === payload.new.id)
+            if (exists) return prev
+            return prev // Şimdilik eski listeyi döndür, profil bilgisi çekildikten sonra ekleyeceğiz
+          })
+
           // Yeni mesaj geldiğinde, gönderenin profil bilgilerini çek
-          const { data: senderProfile } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, avatar_url')
-            .eq('id', payload.new.sender_id)
-            .single()
+          try {
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, avatar_url')
+              .eq('id', payload.new.sender_id)
+              .single()
 
-          const newMessage: Message = {
-            id: payload.new.id,
-            message_text: payload.new.message_text,
-            sender_id: payload.new.sender_id,
-            created_at: payload.new.created_at,
-            sender_profile: senderProfile || null,
+            const newMessage: Message = {
+              id: payload.new.id,
+              message_text: payload.new.message_text,
+              sender_id: payload.new.sender_id,
+              created_at: payload.new.created_at,
+              sender_profile: senderProfile || null,
+            }
+
+            setMessages((current) => {
+              // Tekrar kontrol et (race condition önleme)
+              const alreadyExists = current.some((msg) => msg.id === newMessage.id)
+              if (alreadyExists) return current
+              return [...current, newMessage]
+            })
+            scrollToBottom()
+          } catch (err) {
+            console.error('Profil bilgisi çekilemedi:', err)
+            // Profil bilgisi olmadan da mesajı ekle
+            const newMessage: Message = {
+              id: payload.new.id,
+              message_text: payload.new.message_text,
+              sender_id: payload.new.sender_id,
+              created_at: payload.new.created_at,
+              sender_profile: null,
+            }
+            setMessages((current) => {
+              const alreadyExists = current.some((msg) => msg.id === newMessage.id)
+              if (alreadyExists) return current
+              return [...current, newMessage]
+            })
+            scrollToBottom()
           }
-
-          setMessages((prev) => [...prev, newMessage])
-          scrollToBottom()
         }
       )
       .subscribe()
@@ -256,11 +288,12 @@ export default function ChatDetailPage() {
         return
       }
 
-      // Başarılı - mesajı temizle
+      // Başarılı - mesajı temizle ve input'u sıfırla
       setMessageText('')
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
+      // Realtime ile mesaj otomatik eklenecek, bu yüzden burada ek bir işlem yapmıyoruz
     } catch (err: any) {
       console.error('Beklenmeyen hata:', err)
       setError(err.message || 'Mesaj gönderilirken bir hata oluştu.')
@@ -401,7 +434,7 @@ export default function ChatDetailPage() {
       </div>
 
       {/* Mesaj Alanı (Scrollable) */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3 scroll-smooth">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
             <p className="text-gray-500">Henüz mesaj gönderilmemiş</p>
