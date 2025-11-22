@@ -10,9 +10,11 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserActions } from '@/components/admin/UserActions'
 import Link from 'next/link'
-import { VerifyButton } from '@/components/admin/VerifyButton'
+import { format } from 'date-fns'
+import { tr } from 'date-fns/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,9 +23,15 @@ interface UserProfile {
   first_name: string | null
   last_name: string | null
   email: string | null
+  phone: string | null
   is_provider: boolean
   is_verified: boolean
+  is_admin: boolean
   created_at: string
+  bio: string | null
+  tax_number: string | null
+  business_name: string | null
+  avatar_url: string | null
 }
 
 export default async function AdminUsersPage({
@@ -35,10 +43,12 @@ export default async function AdminUsersPage({
   const resolvedSearchParams = await searchParams
   const filter = resolvedSearchParams?.filter
 
-  // Kullanıcıları çek
+  // Kullanıcıları çek (tüm alanlarla)
   let query = supabase
     .from('profiles')
-    .select('id, first_name, last_name, email, is_provider, is_verified, created_at')
+    .select(
+      'id, first_name, last_name, email, phone, is_provider, is_verified, is_admin, created_at, bio, tax_number, business_name, avatar_url'
+    )
     .order('created_at', { ascending: false })
 
   // Filtreleme
@@ -60,47 +70,24 @@ export default async function AdminUsersPage({
     )
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
+  // Onay bekleyenleri öne çıkar (is_verified ASC, created_at DESC)
+  const sortedProfiles = [...(profiles || [])].sort((a, b) => {
+    // Önce onay durumuna göre (false önce)
+    if (a.is_provider && !a.is_verified && !(b.is_provider && !b.is_verified)) return -1
+    if (b.is_provider && !b.is_verified && !(a.is_provider && !a.is_verified)) return 1
+    // Sonra tarihe göre (yeni önce)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
 
   const getFullName = (profile: UserProfile) => {
     return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'İsimsiz'
   }
 
-  const getRole = (profile: UserProfile) => {
-    if (profile.is_provider) return 'Usta'
-    return 'Müşteri'
+  const getInitials = (profile: UserProfile) => {
+    const first = profile.first_name?.charAt(0) || ''
+    const last = profile.last_name?.charAt(0) || ''
+    return (first + last).toUpperCase() || 'U'
   }
-
-  const getStatus = (profile: UserProfile) => {
-    if (profile.is_provider) {
-      return profile.is_verified ? 'Onaylı' : 'Bekliyor'
-    }
-    return 'Aktif'
-  }
-
-  const getStatusBadge = (profile: UserProfile) => {
-    if (profile.is_provider) {
-      if (profile.is_verified) {
-        return <Badge className="bg-green-500">Onaylı</Badge>
-      }
-      return <Badge className="bg-orange-500">Onay Bekliyor</Badge>
-    }
-    return <Badge variant="outline">Aktif</Badge>
-  }
-
-  // Onay bekleyenleri öne çıkar
-  const sortedProfiles = [...(profiles || [])].sort((a, b) => {
-    if (a.is_provider && !a.is_verified && !(b.is_provider && !b.is_verified)) return -1
-    if (b.is_provider && !b.is_verified && !(a.is_provider && !a.is_verified)) return 1
-    return 0
-  })
 
   return (
     <div className="space-y-8">
@@ -111,9 +98,7 @@ export default async function AdminUsersPage({
         </div>
         <div className="flex gap-2">
           <Link href="/admin/users">
-            <Button variant={filter !== 'pending' ? 'default' : 'outline'}>
-              Tümü
-            </Button>
+            <Button variant={filter !== 'pending' ? 'default' : 'outline'}>Tümü</Button>
           </Link>
           <Link href="/admin/users?filter=pending">
             <Button variant={filter === 'pending' ? 'default' : 'outline'}>
@@ -135,9 +120,9 @@ export default async function AdminUsersPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ad Soyad</TableHead>
-                  <TableHead>E-posta</TableHead>
+                  <TableHead>Avatar & İsim</TableHead>
                   <TableHead>Rol</TableHead>
+                  <TableHead>Telefon</TableHead>
                   <TableHead>Durum</TableHead>
                   <TableHead>Kayıt Tarihi</TableHead>
                   <TableHead className="text-right">Aksiyonlar</TableHead>
@@ -156,36 +141,66 @@ export default async function AdminUsersPage({
                       key={profile.id}
                       className={
                         profile.is_provider && !profile.is_verified
-                          ? 'bg-orange-50'
+                          ? 'bg-orange-50 hover:bg-orange-100'
                           : ''
                       }
                     >
-                      <TableCell className="font-medium">
-                        {getFullName(profile)}
-                      </TableCell>
-                      <TableCell>{profile.email || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={profile.is_provider ? 'default' : 'secondary'}>
-                          {getRole(profile)}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={profile.avatar_url || undefined} alt={getFullName(profile)} />
+                            <AvatarFallback className="bg-indigo-600 text-white">
+                              {getInitials(profile)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">{getFullName(profile)}</span>
+                            <span className="text-sm text-gray-500">{profile.email || '-'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={profile.is_provider ? 'default' : 'secondary'}
+                          className={profile.is_provider ? 'bg-blue-500' : ''}
+                        >
+                          {profile.is_provider ? 'PRO' : 'USER'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{getStatusBadge(profile)}</TableCell>
-                      <TableCell>{formatDate(profile.created_at)}</TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-700">{profile.phone || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        {profile.is_provider ? (
+                          profile.is_verified ? (
+                            <Badge className="bg-green-500">ONAYLI</Badge>
+                          ) : (
+                            <Badge className="bg-orange-500">BEKLİYOR</Badge>
+                          )
+                        ) : (
+                          <Badge variant="outline">AKTİF</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-700">
+                          {format(new Date(profile.created_at), 'dd/MM/yyyy', { locale: tr })}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/profil/${profile.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              Detay
-                            </Button>
-                          </Link>
-                          {profile.is_provider && (
-                            <VerifyButton
-                              userId={profile.id}
-                              isVerified={profile.is_verified}
-                            />
-                          )}
-                        </div>
+                        <UserActions
+                          userId={profile.id}
+                          isProvider={profile.is_provider}
+                          isVerified={profile.is_verified}
+                          profile={{
+                            first_name: profile.first_name,
+                            last_name: profile.last_name,
+                            email: profile.email,
+                            phone: profile.phone,
+                            bio: profile.bio,
+                            tax_number: profile.tax_number,
+                            business_name: profile.business_name,
+                          }}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
@@ -198,4 +213,3 @@ export default async function AdminUsersPage({
     </div>
   )
 }
-
