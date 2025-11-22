@@ -58,13 +58,19 @@ export async function generateMetadata({
   // Ustanın adı
   const fullName = `${providerData.first_name || ''} ${providerData.last_name || ''}`.trim() || 'Usta'
 
-  // Ana hizmeti (İlk hizmeti veya genel "Usta")
-  const mainService =
-    providerData.provider_services?.[0]?.services?.name || 'Usta'
+  // Güvenli Veri Çekme (Array/Object Kontrolü)
 
-  // İlçe (İlk ilçesi veya "Antalya")
-  const district =
-    providerData.provider_locations?.[0]?.antalya_districts?.name || 'Antalya'
+  // 1. Hizmet Adını Al
+  const rawServices = providerData.provider_services?.[0]?.services
+  // Eğer dizi ise ilk elemanı al, değilse kendisini al
+  const serviceObj = Array.isArray(rawServices) ? rawServices[0] : rawServices
+  const mainService = serviceObj?.name || 'Usta'
+
+  // 2. İlçe Adını Al
+  const rawDistricts = providerData.provider_locations?.[0]?.antalya_districts
+  // Eğer dizi ise ilk elemanı al, değilse kendisini al
+  const districtObj = Array.isArray(rawDistricts) ? rawDistricts[0] : rawDistricts
+  const district = districtObj?.name || 'Antalya'
 
   // Puan
   const rating = providerData.average_rating
