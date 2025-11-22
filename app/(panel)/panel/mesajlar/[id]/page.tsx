@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { ArrowLeft, Send, CheckCircle2, Loader2, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle2, Loader2, CheckCheck, Star } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import Link from 'next/link'
+import { ReviewModal } from '@/components/reviews/ReviewModal'
+import { completeJob } from '@/app/actions/jobs'
 
 interface Message {
   id: string
@@ -57,6 +59,8 @@ export default function ChatDetailPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [hasReviewed, setHasReviewed] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -173,6 +177,18 @@ export default function ChatDetailPage() {
         setMessages(safeMessages)
         // Mesajlar yüklendikten sonra scroll yap (instant)
         scrollToBottom(true)
+      }
+
+      // Eğer iş tamamlanmışsa ve client ise, daha önce yorum yapılmış mı kontrol et
+      if (jobData.status === 'completed' && jobData.user_id === user.id) {
+        const { data: existingReview } = await supabase
+          .from('reviews')
+          .select('id')
+          .eq('provider_id', jobData.provider_id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        setHasReviewed(!!existingReview)
       }
     } catch (err: any) {
       console.error('Hata:', err)
@@ -313,22 +329,17 @@ export default function ChatDetailPage() {
   const handleCompleteJob = async () => {
     if (!requestId || !currentUserId) return
 
+    setError(null)
+
     try {
-      const supabase = createClient()
+      const result = await completeJob(requestId)
 
-      const { error } = await supabase
-        .from('job_requests')
-        .update({ status: 'completed' })
-        .eq('id', requestId)
-
-      if (error) {
-        console.error('Durum güncelleme hatası:', error)
-        setError('Durum güncellenemedi.')
-        return
+      if (result.success) {
+        // Başarılı - sayfayı yenile
+        fetchMessages()
+      } else {
+        setError(result.message || 'İş tamamlanırken bir hata oluştu.')
       }
-
-      // Başarılı - sayfayı yenile
-      fetchMessages()
     } catch (err: any) {
       console.error('Hata:', err)
       setError(err.message || 'Bir hata oluştu.')
@@ -416,6 +427,8 @@ export default function ChatDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* DURUM KONTROLÜ */}
+          {/* A) Provider ise ve iş tamamlanmamışsa */}
           {jobRequest?.status !== 'completed' && isProvider && (
             <Button
               variant="outline"
@@ -427,8 +440,27 @@ export default function ChatDetailPage() {
               İşi Tamamla
             </Button>
           )}
+
+          {/* B) İş tamamlanmışsa */}
           {jobRequest?.status === 'completed' && (
-            <Badge className="bg-green-500">Anlaşma Sağlandı</Badge>
+            <>
+              {/* Client ise ve henüz yorum yapmamışsa */}
+              {!isProvider && !hasReviewed && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setReviewModalOpen(true)}
+                  className="gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                >
+                  <Star className="h-4 w-4" />
+                  Ustayı Değerlendir
+                </Button>
+              )}
+              {/* Diğer durumlarda (Provider veya yorum yapılmışsa) */}
+              {(isProvider || hasReviewed) && (
+                <Badge className="bg-green-500">✅ İş Tamamlandı</Badge>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -520,6 +552,17 @@ export default function ChatDetailPage() {
           </Button>
         </form>
       </div>
+
+      {/* Review Modal */}
+      {jobRequest && jobRequest.status === 'completed' && !isProvider && (
+        <ReviewModal
+          open={reviewModalOpen}
+          onOpenChange={setReviewModalOpen}
+          requestId={requestId}
+          providerId={jobRequest.provider_id}
+          providerName={getOtherPartyName()}
+        />
+      )}
     </div>
   )
 }
