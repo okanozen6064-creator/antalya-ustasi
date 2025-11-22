@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Menu, ShieldCheck, User, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
+import { Menu, User, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,17 +78,42 @@ export default function Header() {
         {/* Sol Taraf: Logo ve Menü Linkleri */}
         <div className="flex items-center gap-6">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            {/* İKON KISMI */}
-            <div className="bg-indigo-600 text-white p-2 rounded-lg shadow-md group-hover:bg-indigo-700 transition-colors">
-              <ShieldCheck className="w-6 h-6" strokeWidth={2.5} />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            {/* 1. SOYUT LOGO İKONU (SVG) */}
+            <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-indigo-600 rounded-xl shadow-sm transform group-hover:rotate-3 transition-transform duration-300">
+              {/* Beyaz soyut yapı sembolü */}
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="w-5 h-5 md:w-6 md:h-6 text-white"
+              >
+                <path 
+                  d="M3 21L12 4L21 21H3Z" 
+                  stroke="currentColor" 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+                <path 
+                  d="M12 4V21" 
+                  stroke="currentColor" 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="opacity-50"
+                />
+              </svg>
             </div>
 
-            {/* YAZI KISMI */}
-            <div className="flex flex-col leading-none">
-              <span className="text-[10px] font-bold text-indigo-600 tracking-[0.2em] uppercase">Güvenilir</span>
-              <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight group-hover:text-indigo-900 transition-colors">
-                ANTALYA<span className="text-indigo-600">USTASI</span>
+            {/* 2. MODERN TİPOGRAFİ */}
+            <div className="flex flex-col justify-center -space-y-1">
+              <span className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tighter leading-none">
+                ANTALYA
+                <span className="text-indigo-600">USTASI</span>
+              </span>
+              <span className="hidden md:block text-[10px] font-medium text-slate-400 tracking-widest uppercase ml-0.5">
+                Profesyonel Hizmetler
               </span>
             </div>
           </Link>
