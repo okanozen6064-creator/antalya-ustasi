@@ -83,7 +83,16 @@ export function ChatViewModal({
           setMessages([])
           setError('Mesajlaşma geçmişi bulunamadı veya henüz mesaj gönderilmemiş.')
         } else {
-          setMessages(messagesData || [])
+          // Veriyi güvenli hale getir (Array -> Object dönüşümü)
+          const safeMessages = (messagesData || []).map((msg: any) => ({
+            ...msg,
+            // Eğer sender_profile dizi ise ilk elemanı al, değilse kendisini al, yoksa null yap.
+            sender_profile: Array.isArray(msg.sender_profile)
+              ? msg.sender_profile[0]
+              : msg.sender_profile || null,
+          }))
+
+          setMessages(safeMessages)
         }
       } catch (err: any) {
         console.error('Mesaj yükleme hatası:', err)
