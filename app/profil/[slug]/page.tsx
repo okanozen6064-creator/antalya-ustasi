@@ -159,7 +159,7 @@ export default async function ProfileDetailPage({ params }: PageProps) {
       portfolio_photos (
         photo_url
       ),
-      reviews (
+      reviews!reviews_provider_id_fkey (
         rating,
         comment,
         created_at,

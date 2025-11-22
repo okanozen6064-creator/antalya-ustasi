@@ -37,7 +37,7 @@ export default async function EsnafPage({ params }: PageProps) {
       provider_locations(
         district:antalya_districts(id, name, slug)
       ),
-      reviews(rating, comment, created_at, user_id, id)
+      reviews!reviews_provider_id_fkey(rating, comment, created_at, user_id, id)
     `
     )
     .eq('id', id)

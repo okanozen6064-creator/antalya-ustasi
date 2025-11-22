@@ -79,7 +79,7 @@ export default async function ServicePage({
           name
         )
       ),
-      reviews (
+      reviews!reviews_provider_id_fkey (
         rating
       )`
     )
