@@ -23,8 +23,8 @@ interface JobRequest {
   created_at: string
   user_id: string
   provider_id: string
-  client_name?: string
-  provider_name?: string
+  client_name: string
+  provider_name: string
 }
 
 export default async function AdminJobsPage({
@@ -99,8 +99,10 @@ export default async function AdminJobsPage({
   // İş taleplerini client ve provider bilgileriyle birleştir
   const jobs: JobRequest[] = (jobRequests || []).map((job) => ({
     ...job,
-    client_name: clientProfiles[job.user_id] || 'Bilinmeyen Müşteri',
-    provider_name: providerProfiles[job.provider_id] || 'Bilinmeyen Usta',
+    request_details: job.request_details || '',
+    status: job.status || 'pending',
+    client_name: clientProfiles[job.user_id] || 'İsimsiz Müşteri',
+    provider_name: providerProfiles[job.provider_id] || 'İsimsiz Usta',
   }))
 
   const formatDate = (dateString: string) => {
@@ -184,21 +186,21 @@ export default async function AdminJobsPage({
                 ) : (
                   jobs.map((job) => (
                     <TableRow key={job.id}>
-                      <TableCell className="font-medium">{job.client_name}</TableCell>
-                      <TableCell>{job.provider_name}</TableCell>
+                      <TableCell className="font-medium">{job.client_name || 'İsimsiz Müşteri'}</TableCell>
+                      <TableCell>{job.provider_name || 'İsimsiz Usta'}</TableCell>
                       <TableCell className="max-w-md">
-                        <p className="truncate" title={job.request_details}>
+                        <p className="truncate" title={job.request_details || ''}>
                           {job.request_details || '-'}
                         </p>
                       </TableCell>
-                      <TableCell>{getStatusBadge(job.status)}</TableCell>
-                      <TableCell>{formatDate(job.created_at)}</TableCell>
+                      <TableCell>{getStatusBadge(job.status || 'pending')}</TableCell>
+                      <TableCell>{formatDate(job.created_at || new Date().toISOString())}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <ChatViewButton
                             jobRequestId={job.id}
-                            clientName={job.client_name}
-                            providerName={job.provider_name}
+                            clientName={job.client_name || 'İsimsiz Müşteri'}
+                            providerName={job.provider_name || 'İsimsiz Usta'}
                           />
                           <Link href={`/admin/jobs/${job.id}`}>
                             <Button variant="outline" size="sm">
