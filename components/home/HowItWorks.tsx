@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Search, MessageCircle, Star, UserPlus, Briefcase, TrendingUp } from 'lucide-react'
+import FadeIn from '@/components/animations/FadeIn'
 
 // Müşteri Adımları
 const clientSteps = [
@@ -103,26 +104,25 @@ export default function HowItWorks() {
           {steps.map((step, idx) => {
             const IconComponent = step.icon
             return (
-              <div
-                key={step.id}
-                className="bg-white rounded-2xl shadow-lg p-8 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4"
-              >
-                <div className="flex flex-col items-center text-center">
-                  {/* İkon */}
-                  <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-6 group-hover:bg-indigo-200 transition-colors">
-                    <IconComponent className="w-10 h-10 text-indigo-600" strokeWidth={2} />
-                  </div>
+              <FadeIn key={step.id} delay={idx * 0.2}>
+                <div className="bg-white rounded-2xl shadow-lg p-8 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group">
+                  <div className="flex flex-col items-center text-center">
+                    {/* İkon */}
+                    <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center mb-6 group-hover:bg-indigo-200 transition-colors">
+                      <IconComponent className="w-10 h-10 text-indigo-600" strokeWidth={2} />
+                    </div>
 
-                  {/* Başlık ve Açıklama */}
-                  <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
-                  <p className="text-slate-600 leading-relaxed">{step.description}</p>
+                    {/* Başlık ve Açıklama */}
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                    <p className="text-slate-600 leading-relaxed">{step.description}</p>
 
-                  {/* Adım Numarası */}
-                  <div className="mt-6 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
-                    {step.id}
+                    {/* Adım Numarası */}
+                    <div className="mt-6 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
+                      {step.id}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </FadeIn>
             )
           })}
         </div>

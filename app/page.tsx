@@ -5,6 +5,7 @@ import { CategoryCards } from '@/components/category-cards'
 import { CheckCircle2, Shield, Star, Zap, DollarSign } from 'lucide-react'
 import HowItWorks from '@/components/home/HowItWorks'
 import FeaturedPros from '@/components/home/FeaturedPros'
+import FadeIn from '@/components/animations/FadeIn'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
@@ -28,35 +29,43 @@ export default async function Home() {
       {/* 1. HERO SECTION (ARAMA ALANI) */}
       <section className="relative bg-gradient-to-b from-blue-50 to-white py-20 lg:py-32 px-4">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
-            Antalya'nın <span className="text-blue-600">En İyi Ustaları</span>
-            <br />
-            Bir Arada
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Eviniz, ofisiniz veya aracınız için güvenilir profesyonelleri saniyeler içinde bulun. Ücretsiz teklif alın, karşılaştırın, seçin.
-          </p>
+          <FadeIn>
+            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              Antalya'nın <span className="text-blue-600">En İyi Ustaları</span>
+              <br />
+              Bir Arada
+            </h1>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+              Eviniz, ofisiniz veya aracınız için güvenilir profesyonelleri saniyeler içinde bulun. Ücretsiz teklif alın, karşılaştırın, seçin.
+            </p>
+          </FadeIn>
 
           {/* Arama Kartı */}
-          <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-100 mb-8">
-            <SearchForm services={services || []} districts={districts || []} />
-          </div>
+          <FadeIn delay={0.2}>
+            <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-100 mb-8">
+              <SearchForm services={services || []} districts={districts || []} />
+            </div>
+          </FadeIn>
 
           {/* Güven Sinyalleri */}
-          <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-gray-500">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              Doğrulanmış Profiller
-            </span>
-            <span className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-blue-500" />
-              Hızlı Teklif
-            </span>
-            <span className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" />
-              Gerçek Yorumlar
-            </span>
-          </div>
+          <FadeIn delay={0.3}>
+            <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-gray-500">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                Doğrulanmış Profiller
+              </span>
+              <span className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-500" />
+                Hızlı Teklif
+              </span>
+              <span className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                Gerçek Yorumlar
+              </span>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
