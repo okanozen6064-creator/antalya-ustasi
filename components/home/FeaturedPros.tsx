@@ -39,6 +39,22 @@ export default async function FeaturedPros() {
     return null
   }
 
-  return <FeaturedProsClient providers={providers} />
+  // Veri Dönüştürme (Data Transformation) - Array to Object Fix
+  const formattedProviders = (providers || []).map((provider: any) => ({
+    ...provider,
+    provider_services: provider.provider_services?.map((ps: any) => ({
+      ...ps,
+      // Eğer services bir dizi ise ilkini al, değilse kendisini al
+      services: Array.isArray(ps.services) ? ps.services[0] : ps.services
+    })),
+    provider_locations: provider.provider_locations?.map((pl: any) => ({
+      ...pl,
+      // Eğer antalya_districts bir dizi ise ilkini al, değilse kendisini al
+      antalya_districts: Array.isArray(pl.antalya_districts) ? pl.antalya_districts[0] : pl.antalya_districts
+    }))
+  }))
+
+  // Dönüştürülmüş veriyi gönder
+  return <FeaturedProsClient providers={formattedProviders} />
 }
 
