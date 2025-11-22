@@ -106,6 +106,26 @@ test.describe('Kullanıcı Yolculuğu Testleri - End-to-End Senaryolar', () => {
     // Ana sayfaya git
     await page.goto('/', { waitUntil: 'networkidle' })
 
+    // --- FIX BAŞLANGICI: Beta Modalını Kapat ---
+    // "Siteyi İncelemeye Başla" butonu veya modal kapatma butonu varsa tıkla
+    const betaModalButton = page.locator('button').filter({ hasText: /Siteyi İncelemeye Başla|Close/i }).first()
+    if (await betaModalButton.count() > 0) {
+      try {
+        await betaModalButton.waitFor({ state: 'visible', timeout: 3000 })
+        await betaModalButton.click()
+        // Modalın kapanmasını bekle
+        await page.waitForTimeout(500)
+        const dialog = page.locator('[role="dialog"]')
+        if (await dialog.count() > 0) {
+          await expect(dialog.first()).not.toBeVisible({ timeout: 2000 })
+        }
+      } catch (error) {
+        // Modal zaten kapalı veya görünmüyor, devam et
+        console.log('Beta modal zaten kapalı veya görünmüyor')
+      }
+    }
+    // --- FIX BİTİŞİ ---
+
     // Ana sayfa yüklendiğini doğrula
     await expect(page.locator('h1')).toContainText(/Antalya|Ustası/i)
 
