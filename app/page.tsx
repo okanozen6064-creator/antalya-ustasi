@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { SearchForm } from '@/components/search-form'
 import { CategoryCards } from '@/components/category-cards'
 import { CheckCircle2, Shield, Star, Zap, DollarSign } from 'lucide-react'
+import HowItWorks from '@/components/home/HowItWorks'
+import FeaturedPros from '@/components/home/FeaturedPros'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
@@ -57,6 +59,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* How It Works Section */}
+      <HowItWorks />
+
+      {/* Featured Pros Section */}
+      <FeaturedPros />
 
       {/* 2. İSTATİSTİK BANDI */}
       <div className="bg-white border-y border-gray-100 py-10">
