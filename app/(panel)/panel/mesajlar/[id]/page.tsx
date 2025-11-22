@@ -424,7 +424,7 @@ export default function ChatDetailPage() {
                         alt={getOtherPartyName()}
                       />
                       <AvatarFallback className="bg-gray-300 text-gray-700 text-xs">
-                        {getInitials(message.sender_profile)}
+                        {getInitials(message.sender_profile || null)}
                       </AvatarFallback>
                     </Avatar>
                   )}
