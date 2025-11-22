@@ -130,10 +130,18 @@ export default function ChatDetailPage() {
       // Kullanıcının usta olup olmadığını kontrol et
       setIsProvider(jobData.provider_id === user.id)
 
+      // Supabase'den gelen veri bazen array, bazen object olabilir - güvenli şekilde alalım
+      const safeClientProfile = Array.isArray(jobData.client_profile)
+        ? jobData.client_profile[0]
+        : jobData.client_profile
+      const safeProviderProfile = Array.isArray(jobData.provider_profile)
+        ? jobData.provider_profile[0]
+        : jobData.provider_profile
+
       setJobRequest({
         ...jobData,
-        client_profile: jobData.client_profile || null,
-        provider_profile: jobData.provider_profile || null,
+        client_profile: safeClientProfile || null,
+        provider_profile: safeProviderProfile || null,
       })
 
       // Mesajları çek (avatar bilgileriyle)
