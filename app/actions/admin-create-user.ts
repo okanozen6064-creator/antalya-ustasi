@@ -61,13 +61,19 @@ export async function createProviderManually(formData: FormData) {
     })
 
     // 4. Kullanıcı Oluştur (Auth)
+    const fullName = `${firstName} ${lastName}`.trim()
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Otomatik onaylanmış
       user_metadata: {
+        full_name: fullName, // İsim veritabanına buradan gidecek!
         first_name: firstName,
         last_name: lastName,
+        is_provider: true,
+        is_verified: true, // Admin eklediği için direkt onaylı
+        // Eğer işletme adı varsa onu da ekle
+        business_name: businessName || '',
       },
     })
 
