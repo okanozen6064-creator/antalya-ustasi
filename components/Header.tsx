@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Menu, Hammer, User, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
+import { Menu, ShieldCheck, User, LogOut, LayoutDashboard, UserCircle } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,11 +78,19 @@ export default function Header() {
         {/* Sol Taraf: Logo ve Menü Linkleri */}
         <div className="flex items-center gap-6">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Hammer className="h-6 w-6 text-indigo-600" />
-            <span className="text-xl md:text-2xl font-black tracking-tight text-indigo-600">
-              ANTALYA USTASI
-            </span>
+          <Link href="/" className="flex items-center gap-2 group">
+            {/* İKON KISMI */}
+            <div className="bg-indigo-600 text-white p-2 rounded-lg shadow-md group-hover:bg-indigo-700 transition-colors">
+              <ShieldCheck className="w-6 h-6" strokeWidth={2.5} />
+            </div>
+
+            {/* YAZI KISMI */}
+            <div className="flex flex-col leading-none">
+              <span className="text-[10px] font-bold text-indigo-600 tracking-[0.2em] uppercase">Güvenilir</span>
+              <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight group-hover:text-indigo-900 transition-colors">
+                ANTALYA<span className="text-indigo-600">USTASI</span>
+              </span>
+            </div>
           </Link>
 
           {/* Masaüstü Menü Linkleri */}
