@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { UserActions } from '@/components/admin/UserActions'
+import { CreateProviderModal } from '@/components/admin/CreateProviderModal'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -97,6 +98,7 @@ export default async function AdminUsersPage({
           <p className="text-gray-600 mt-2">Tüm kullanıcıları görüntüle ve yönet</p>
         </div>
         <div className="flex gap-2">
+          <CreateProviderModal />
           <Link href="/admin/users">
             <Button variant={filter !== 'pending' ? 'default' : 'outline'}>Tümü</Button>
           </Link>
