@@ -46,6 +46,11 @@ export async function completeJob(requestId: string) {
       return { success: false, message: 'Bu iş zaten tamamlanmış.' }
     }
 
+    // İş 'pending' veya 'responded' durumunda olmalı
+    if (jobRequest.status !== 'pending' && jobRequest.status !== 'responded') {
+      return { success: false, message: 'Bu iş tamamlanmaya hazır değil.' }
+    }
+
     // İşi tamamla
     const { error: updateError } = await supabaseAdmin
       .from('job_requests')
@@ -147,25 +152,27 @@ export async function submitReview(
       return { success: false, message: `Değerlendirme kaydedilirken hata: ${insertError.message}` }
     }
 
+    // Provider'ın mevcut ortalama puanını ve yorum sayısını çek
+    const { data: providerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('average_rating, review_count')
+      .eq('id', providerId)
+      .single()
+
+    // Yeni ortalama puanı hesapla: ((Eski Puan * Eski Sayı) + Yeni Puan) / (Eski Sayı + 1)
+    const oldRating = providerProfile?.average_rating || 0
+    const oldCount = providerProfile?.review_count || 0
+    const newCount = oldCount + 1
+    const newAverageRating = ((oldRating * oldCount) + rating) / newCount
+
     // Provider'ın ortalama puanını ve yorum sayısını güncelle
-    const { data: allReviews } = await supabaseAdmin
-      .from('reviews')
-      .select('rating')
-      .eq('provider_id', providerId)
-
-    if (allReviews && allReviews.length > 0) {
-      const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0)
-      const averageRating = totalRating / allReviews.length
-      const reviewCount = allReviews.length
-
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          average_rating: averageRating,
-          review_count: reviewCount,
-        })
-        .eq('id', providerId)
-    }
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        average_rating: newAverageRating,
+        review_count: newCount,
+      })
+      .eq('id', providerId)
 
     revalidatePath(`/panel/mesajlar/${requestId}`)
     revalidatePath(`/profil/${providerId}`)

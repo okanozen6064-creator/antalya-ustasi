@@ -428,39 +428,35 @@ export default function ChatDetailPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* DURUM KONTROLÜ */}
-          {/* A) Provider ise ve iş tamamlanmamışsa */}
-          {jobRequest?.status !== 'completed' && isProvider && (
+          {/* DURUM 1: Provider ise ve iş 'pending' veya 'responded' ise */}
+          {isProvider && (jobRequest?.status === 'pending' || jobRequest?.status === 'responded') && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleCompleteJob}
-              className="gap-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+              className="gap-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100 font-semibold"
             >
-              <CheckCircle2 className="h-4 w-4" />
-              İşi Tamamla
+              ✅ İşi Tamamla
             </Button>
           )}
 
-          {/* B) İş tamamlanmışsa */}
-          {jobRequest?.status === 'completed' && (
-            <>
-              {/* Client ise ve henüz yorum yapmamışsa */}
-              {!isProvider && !hasReviewed && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setReviewModalOpen(true)}
-                  className="gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
-                >
-                  <Star className="h-4 w-4" />
-                  Ustayı Değerlendir
-                </Button>
-              )}
-              {/* Diğer durumlarda (Provider veya yorum yapılmışsa) */}
-              {(isProvider || hasReviewed) && (
-                <Badge className="bg-green-500">✅ İş Tamamlandı</Badge>
-              )}
-            </>
+          {/* DURUM 2: İş 'completed' ise ve Client ise ve henüz yorum yapmamışsa */}
+          {jobRequest?.status === 'completed' && !isProvider && !hasReviewed && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setReviewModalOpen(true)}
+              className="gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold shadow-md"
+            >
+              ⭐ Ustayı Değerlendir
+            </Button>
+          )}
+
+          {/* DURUM 3: İş 'completed' ve yorum yapılmışsa */}
+          {jobRequest?.status === 'completed' && (isProvider || hasReviewed) && (
+            <Badge className="bg-green-500 text-white font-semibold px-3 py-1">
+              🎉 İş Tamamlandı
+            </Badge>
           )}
         </div>
       </div>

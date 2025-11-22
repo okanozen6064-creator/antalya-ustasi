@@ -95,7 +95,7 @@ export function ReviewModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            {providerName} adlı ustayı değerlendirin
+            Hizmet nasıldı?
           </DialogTitle>
           <DialogDescription>
             İşiniz tamamlandı. Lütfen ustanızı değerlendirin.
@@ -186,7 +186,7 @@ export function ReviewModal({
                   Gönderiliyor...
                 </>
               ) : (
-                'Değerlendirmeyi Gönder'
+                'Değerlendir ve Bitir'
               )}
             </Button>
           </div>
