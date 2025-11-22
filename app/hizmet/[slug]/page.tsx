@@ -17,20 +17,28 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const resolvedParams = await params
   const { slug } = resolvedParams
+  const supabase = await createClient()
 
-  // Slug'ı düzgün formatla (kebab-case'den normal metne)
-  const formatSlug = (slug: string) => {
-    return slug
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
+  // Supabase'den hizmet adını çek
+  const { data: service, error } = await supabase
+    .from('services')
+    .select('name')
+    .eq('slug', slug)
+    .single()
+
+  // Eğer hizmet bulunamazsa varsayılan başlık
+  if (error || !service) {
+    return {
+      title: 'Hizmet Bulunamadı | Antalya Ustası',
+      description: 'Aradığınız hizmet bulunamadı.',
+    }
   }
 
-  const serviceName = formatSlug(slug)
+  const serviceName = service.name
 
   return {
-    title: `${serviceName} Ustaları`,
-    description: `Antalya'da ${serviceName.toLowerCase()} hizmeti veren güvenilir ve onaylı ustalar. Ücretsiz teklif alın, en iyi fiyatı bulun.`,
+    title: `Antalya ${serviceName} Hizmetleri - En İyi Ustalar ve Fiyatlar | Antalya Ustası`,
+    description: `Antalya genelinde en güvenilir ${serviceName} ustalarından ücretsiz teklif al. Gerçek müşteri yorumları, uygun fiyatlar ve onaylı profiller Antalya Ustası'nda.`,
   }
 }
 

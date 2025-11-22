@@ -7,9 +7,86 @@ import Image from 'next/image'
 import { Star, Phone, CheckCircle } from 'lucide-react'
 import { CreateJobModal } from '@/components/jobs/CreateJobModal'
 import { CallButton } from '@/components/ui/CallButton'
+import type { Metadata } from 'next'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
+
+// Dinamik Metadata
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const resolvedParams = await params
+  const { slug } = resolvedParams
+  const supabase = await createClient()
+
+  // Ustanın verisini çek
+  const { data: providerData, error } = await supabase
+    .from('profiles')
+    .select(
+      `
+      first_name,
+      last_name,
+      average_rating,
+      provider_services (
+        services (
+          name
+        )
+      ),
+      provider_locations (
+        antalya_districts (
+          name
+        )
+      )
+    `
+    )
+    .eq('slug', slug)
+    .eq('is_provider', true)
+    .eq('is_verified', true)
+    .maybeSingle()
+
+  // Eğer usta bulunamazsa varsayılan başlık
+  if (error || !providerData) {
+    return {
+      title: 'Usta Bulunamadı | Antalya Ustası',
+      description: 'Aradığınız usta bulunamadı.',
+    }
+  }
+
+  // Ustanın adı
+  const fullName = `${providerData.first_name || ''} ${providerData.last_name || ''}`.trim() || 'Usta'
+
+  // Ana hizmeti (İlk hizmeti veya genel "Usta")
+  const mainService =
+    providerData.provider_services?.[0]?.services?.name || 'Usta'
+
+  // İlçe (İlk ilçesi veya "Antalya")
+  const district =
+    providerData.provider_locations?.[0]?.antalya_districts?.name || 'Antalya'
+
+  // Puan
+  const rating = providerData.average_rating
+    ? `${providerData.average_rating.toFixed(1)} Puan`
+    : ''
+
+  // Title oluştur
+  const titleParts = [fullName, district, mainService]
+  if (rating) {
+    titleParts.push(rating)
+  }
+  titleParts.push('Antalya Ustası')
+  const title = titleParts.join(' | ')
+
+  // Description oluştur
+  const description = `${fullName}, Antalya ${district} bölgesinde ${mainService} hizmeti veriyor. Müşteri yorumlarını oku, hemen ücretsiz teklif iste.`
+
+  return {
+    title,
+    description,
+  }
+}
 
 // Yardımcı Fonksiyonlar ve Tipler
 interface ClientProfile {
