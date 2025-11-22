@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Image from 'next/image'
 import { Star, Phone, CheckCircle } from 'lucide-react'
-import { QuoteRequestModal } from '@/components/QuoteRequestModal'
+import { CreateJobModal } from '@/components/jobs/CreateJobModal'
 import { CallButton } from '@/components/ui/CallButton'
 
 // Verileri her seferinde taze çek
@@ -144,7 +144,7 @@ export default async function ProfileDetailPage({ params }: PageProps) {
                 </Button>
               )}
               {/* Teklif İste (Modal) */}
-              <QuoteRequestModal providerId={provider.id} providerName={fullName} />
+              <CreateJobModal providerId={provider.id} providerName={fullName} />
             </div>
           </div>
         </Card>

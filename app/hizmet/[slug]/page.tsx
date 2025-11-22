@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { QuoteRequestModal } from '@/components/QuoteRequestModal'
+import { CreateJobModal } from '@/components/jobs/CreateJobModal'
 import { RevealNumber } from '@/components/ui/RevealNumber'
 import { CallButton } from '@/components/ui/CallButton'
 import type { Metadata } from 'next'
@@ -263,7 +263,7 @@ export default async function ServicePage({
 
                       {/* TEKLİF İSTE */}
                       <div className="w-full">
-                        <QuoteRequestModal
+                        <CreateJobModal
                           providerId={provider.id}
                           providerName={`${provider.first_name || ''} ${provider.last_name || ''}`}
                         />

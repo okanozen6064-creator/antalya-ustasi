@@ -21,6 +21,7 @@ import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-rea
 import { Checkbox } from '@/components/ui/checkbox'
 import PageContainer from '@/components/PageContainer'
 import { getURL } from '@/lib/utils'
+import { LegalAgreement } from '@/components/auth/LegalAgreement'
 
 interface Service {
   id: string
@@ -61,6 +62,7 @@ export default function ProRegisterPage() {
   const [districts, setDistricts] = useState<District[]>([])
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [legalAccepted, setLegalAccepted] = useState(false)
   const router = useRouter()
 
   // Verileri çek
@@ -164,6 +166,12 @@ export default function ProRegisterPage() {
 
   const handleSubmit = async () => {
     if (!validateStep(2)) return
+
+    // Legal agreement kontrolü
+    if (!legalAccepted) {
+      setErrorMessage('Lütfen kullanıcı sözleşmesini okuyup onaylayın!')
+      return
+    }
 
     setErrorMessage('')
     setLoading(true)
@@ -549,6 +557,17 @@ export default function ProRegisterPage() {
                     Bilgilerinizi kontrol edin. "Kaydı Tamamla" butonuna tıkladığınızda kayıt işlemi başlayacaktır.
                   </AlertDescription>
                 </Alert>
+
+                <LegalAgreement onAccept={setLegalAccepted} />
+
+                {!legalAccepted && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      Lütfen sözleşmeyi okuyup onaylayın
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
 
@@ -578,7 +597,7 @@ export default function ProRegisterPage() {
                 <Button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || !legalAccepted}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {loading ? 'Kayıt Yapılıyor...' : 'Kaydı Tamamla'}

@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye } from 'lucide-react'
+import { Eye, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
+import { ChatViewButton } from '@/components/admin/ChatViewButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -193,12 +194,19 @@ export default async function AdminJobsPage({
                       <TableCell>{getStatusBadge(job.status)}</TableCell>
                       <TableCell>{formatDate(job.created_at)}</TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/admin/jobs/${job.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            Detay
-                          </Button>
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <ChatViewButton
+                            jobRequestId={job.id}
+                            clientName={job.client_name}
+                            providerName={job.provider_name}
+                          />
+                          <Link href={`/admin/jobs/${job.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              Detay
+                            </Button>
+                          </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

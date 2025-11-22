@@ -20,6 +20,7 @@ import {
 import { AlertCircle } from 'lucide-react'
 import PageContainer from '@/components/PageContainer'
 import { getURL } from '@/lib/utils'
+import { LegalAgreement } from '@/components/auth/LegalAgreement'
 
 export default function ClientRegisterPage() {
   const [fullName, setFullName] = useState('')
@@ -28,6 +29,7 @@ export default function ClientRegisterPage() {
   const [phone, setPhone] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [legalAccepted, setLegalAccepted] = useState(false)
   const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -36,6 +38,12 @@ export default function ClientRegisterPage() {
     setLoading(true)
 
     // Validasyon
+    if (!legalAccepted) {
+      setErrorMessage('Lütfen kullanıcı sözleşmesini okuyup onaylayın!')
+      setLoading(false)
+      return
+    }
+
     if (!fullName.trim()) {
       setErrorMessage('Ad Soyad gereklidir!')
       setLoading(false)
@@ -203,7 +211,18 @@ export default function ClientRegisterPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <LegalAgreement onAccept={setLegalAccepted} />
+
+              {!legalAccepted && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Lütfen sözleşmeyi okuyup onaylayın
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading || !legalAccepted}>
                 {loading ? 'Kayıt Yapılıyor...' : 'Kayıt Ol'}
               </Button>
             </form>
