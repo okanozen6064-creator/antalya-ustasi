@@ -74,51 +74,51 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4 mx-auto">
-        
+
         {/* Sol Taraf: Logo ve Menü Linkleri */}
         <div className="flex items-center gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
             {/* YENİ LOGO (SVG) */}
             <div className="relative w-12 h-12 md:w-14 md:h-14">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
-                    <defs>
-                        <linearGradient id="pinGradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#FB923C" /> <stop offset="1" stopColor="#EA580C" /> </linearGradient>
-                    </defs>
-                  
-                    <path 
-                        d="M50 5C27.9 5 10 22.9 10 45C10 69 50 95 50 95C50 95 90 69 90 45C90 22.9 72.1 5 50 5Z" 
-                        fill="url(#pinGradient)" 
-                    />
-                  
-                    <path 
-                        d="M30 42L50 26L70 42V55H30V42Z" 
-                        fill="white" 
-                    />
-                  
-                    <path 
-                        d="M50 58C46.1 58 43 61.1 43 65C43 68.9 46.1 72 50 72C53.9 72 57 68.9 57 65C57 61.1 53.9 58 50 58ZM50 69C47.8 69 46 67.2 46 65C46 62.8 47.8 61 50 61C52.2 61 54 62.8 54 65C54 67.2 52.2 69 50 69Z" 
-                        fill="white" 
-                    />
-                    <path 
-                        d="M60 65H63M37 65H40M50 52V55M50 75V78" 
-                        stroke="white" 
-                        strokeWidth="3" 
-                        strokeLinecap="round" 
-                    />
-                </svg>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
+                <defs>
+                  <linearGradient id="pinGradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#6366F1" /> <stop offset="1" stopColor="#4338CA" /> </linearGradient>
+                </defs>
+
+                <path
+                  d="M50 5C27.9 5 10 22.9 10 45C10 69 50 95 50 95C50 95 90 69 90 45C90 22.9 72.1 5 50 5Z"
+                  fill="url(#pinGradient)"
+                />
+
+                <path
+                  d="M30 42L50 26L70 42V55H30V42Z"
+                  fill="white"
+                />
+
+                <path
+                  d="M50 58C46.1 58 43 61.1 43 65C43 68.9 46.1 72 50 72C53.9 72 57 68.9 57 65C57 61.1 53.9 58 50 58ZM50 69C47.8 69 46 67.2 46 65C46 62.8 47.8 61 50 61C52.2 61 54 62.8 54 65C54 67.2 52.2 69 50 69Z"
+                  fill="white"
+                />
+                <path
+                  d="M60 65H63M37 65H40M50 52V55M50 75V78"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
             </div>
 
             <div className="flex flex-col justify-center -space-y-1">
-                <span className="text-xl md:text-3xl font-bold text-slate-800 tracking-tight leading-none">
-                    ANTALYA
-                </span>
-                <span className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
-                    USTASI
-                </span>
+              <span className="text-xl md:text-3xl font-bold text-slate-800 tracking-tight leading-none">
+                ANTALYA
+              </span>
+              <span className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                USTASI
+              </span>
             </div>
-            <span className="w-2 h-2 md:w-3 md:h-3 bg-orange-500 rounded-full mb-1 self-end mb-2"></span>
+            <span className="w-2 h-2 md:w-3 md:h-3 bg-indigo-600 rounded-full mb-1 self-end mb-2"></span>
           </Link>
 
           {/* ESKİ LOGO (YORUM SATIRI)
