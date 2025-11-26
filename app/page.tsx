@@ -6,6 +6,7 @@ import { CheckCircle2, Shield, Star, Zap, DollarSign } from 'lucide-react'
 import HowItWorks from '@/components/home/HowItWorks'
 import FeaturedPros from '@/components/home/FeaturedPros'
 import FadeIn from '@/components/animations/FadeIn'
+import InstagramBanner from '@/components/home/InstagramBanner'
 
 // Verileri her seferinde taze çek
 export const dynamic = 'force-dynamic'
@@ -196,6 +197,9 @@ export default async function Home() {
       <section id="kategoriler">
         <CategoryCards />
       </section>
+
+      {/* Instagram Banner */}
+      <InstagramBanner />
     </>
   )
 }

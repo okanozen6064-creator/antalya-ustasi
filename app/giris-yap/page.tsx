@@ -1,129 +1,81 @@
 'use client'
-
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/ui/alert'
-import { AlertCircle, Info } from 'lucide-react'
-import PageContainer from '@/components/PageContainer'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import Link from 'next/link'
+import { LogIn } from 'lucide-react'
 
-export default function GirisYapPage() {
+export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
-  const [infoMessage, setInfoMessage] = useState('')
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const supabase = createClient()
 
-  // URL'den mesaj parametresini kontrol et
-  useEffect(() => {
-    const message = searchParams.get('message')
-    if (message === 'inactivity_logout') {
-      setInfoMessage('Uzun süre hareketsiz kaldığınız için güvenli çıkış yapıldı.')
-    }
-  }, [searchParams])
-
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
 
-    // Hata mesajını temizle
-    setErrorMessage('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        console.error('Giriş hatası:', error)
-        setErrorMessage(error.message)
-        return
-      }
-
-      // Başarılı giriş
-      setErrorMessage('')
-      router.refresh() // SUNUCU BİLEŞENLERİNİ YENİLE (HEADER'I GÜNCELLE)
-      router.push('/') // ŞİMDİ ANASAYFAYA YÖNLENDİR
-    } catch (err) {
-      console.error('Beklenmeyen hata:', err)
-      setErrorMessage('Giriş başarısız: Bir hata oluştu. Lütfen tekrar deneyin.')
-      return
+    if (error) {
+      toast.error('Giriş başarısız: ' + error.message)
+      setLoading(false)
+    } else {
+      toast.success('Giriş başarılı! Yönlendiriliyorsunuz...')
+      router.push('/panel')
+      router.refresh()
     }
   }
 
   return (
-    <PageContainer>
-      <Card className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-xl shadow-lg w-full max-w-lg mx-auto">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center">
-            Giriş Yap
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-6">
-            {infoMessage && (
-              <Alert className="text-blue-600 border-blue-200 bg-blue-50">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Bilgi</AlertTitle>
-                <AlertDescription>{infoMessage}</AlertDescription>
-              </Alert>
-            )}
-            {errorMessage && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Hata</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+      {/* SOL: FORM */}
+      <div className="flex items-center justify-center py-12 px-4 bg-white">
+        <div className="mx-auto w-full max-w-md space-y-6">
+          <div className="text-center lg:text-left">
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Tekrar Hoş Geldiniz</h1>
+            <p className="mt-2 text-slate-500">Hesabınıza giriş yapın ve işlemlere devam edin.</p>
+          </div>
 
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-posta</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="ornek@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full"
-              />
+              <Input id="email" type="email" placeholder="ornek@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Şifrenizi girin"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Şifre</Label>
+                <Link href="/forgot-password" className="text-sm text-indigo-600 hover:underline">Şifremi Unuttum?</Link>
+              </div>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" />
             </div>
 
-            <Button type="submit" className="w-full">
-              Giriş Yap
+            <Button type="submit" className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-base" disabled={loading}>
+              {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'} <LogIn className="ml-2 w-4 h-4" />
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </PageContainer>
+
+          <p className="text-center text-sm text-slate-600">
+            Hesabınız yok mu? <Link href="/register/client" className="text-indigo-600 font-semibold hover:underline">Kayıt Olun</Link>
+          </p>
+        </div>
+      </div>
+
+      {/* SAĞ: GÖRSEL */}
+      <div className="hidden lg:block relative bg-slate-900">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1631603090989-93f9ef6f9dbe?q=80&w=2000')] bg-cover bg-center opacity-30"></div>
+        <div className="relative z-10 flex h-full items-end p-10">
+          <div className="text-white">
+            <h2 className="text-3xl font-bold mb-2">İşiniz Yarım Kalmasın.</h2>
+            <p className="text-indigo-200">Antalya'nın en iyi ustalarıyla çalışmaya devam edin.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
-
