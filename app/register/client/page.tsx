@@ -10,22 +10,31 @@ import { LegalAgreement } from '@/components/auth/LegalAgreement';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Quote, CheckCircle2 } from 'lucide-react';
+import { Star, Quote, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Başlangıç durumu
 const initialState = {
   success: false,
   message: '',
-  error: {} // Note: Changed from 'errors' to 'error' to match ActionState type in auth.ts
+  error: {}
 };
 
 export default function ClientRegisterPage() {
-  // useFormState ile Server Action'ı bağlıyoruz
   const [state, formAction] = useFormState(registerClient, initialState);
+  const [step, setStep] = useState(1);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const router = useRouter();
+
+  // Form verilerini geçici tutmak için state
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    password: ''
+  });
 
   useUnsavedChanges(isTyping);
 
@@ -39,121 +48,266 @@ export default function ClientRegisterPage() {
     }
   }, [state, router]);
 
-  const handleInputChange = () => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setIsTyping(true);
   };
 
+  const nextStep = () => {
+    if (step === 1) {
+      if (!formData.full_name || !formData.email) {
+        toast.error("Lütfen isim ve e-posta alanlarını doldurun.");
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!formData.phone || !formData.password) {
+        toast.error("Lütfen telefon ve şifre alanlarını doldurun.");
+        return;
+      }
+    }
+    setStep(prev => prev + 1);
+  };
+
+  const prevStep = () => setStep(prev => prev - 1);
+
+  const getStepTitle = () => {
+    switch (step) {
+      case 1: return "Kimlik Bilgileri";
+      case 2: return "Güvenlik Bilgileri";
+      case 3: return "Onay ve Tamamlama";
+      default: return "";
+    }
+  };
+
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+    <div className="w-full min-h-screen flex flex-col lg:flex-row">
 
-      {/* SOL TARAF (FORM) */}
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="mx-auto w-full max-w-md space-y-8">
+      {/* SOL TARA (FORM ALANI) - %40 */}
+      <div className="w-full lg:w-[40%] bg-white flex flex-col justify-center px-8 py-12 lg:px-16 relative">
 
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              Müşteri Hesabı Oluştur
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Zaten hesabınız var mı?{' '}
-              <Link href="/giris-yap" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Giriş Yapın
-              </Link>
-            </p>
+        {/* Logo veya Geri Dön */}
+        <div className="absolute top-8 left-8">
+          <Link href="/" className="text-indigo-600 font-bold text-lg flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" /> Ana Sayfa
+          </Link>
+        </div>
+
+        <div className="w-full max-w-md mx-auto space-y-8">
+
+          {/* Progress Bar & Header */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-sm font-medium text-gray-500">
+              <span>Adım {step}/3</span>
+              <span className="text-indigo-600">{getStepTitle()}</span>
+            </div>
+            <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-indigo-600 rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: `${(step / 3) * 100}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+
+            <div className="text-center lg:text-left pt-4">
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+                {step === 1 ? "Hesabınızı Oluşturun" : step === 2 ? "Güvenliğinizi Sağlayın" : "Son Bir Adım Kaldı"}
+              </h2>
+              <p className="mt-2 text-gray-600">
+                Antalya'nın en güvenilir ustalarına ulaşmak için hemen katılın.
+              </p>
+            </div>
           </div>
 
-          {/* FORM BAŞLANGICI */}
-          <form action={formAction} className="space-y-5">
-
-            {/* Ad Soyad */}
-            <div>
-              <Label htmlFor="full_name">Ad Soyad</Label>
-              <Input
-                id="full_name"
-                name="full_name"
-                placeholder="Adınız Soyadınız"
-                className="mt-1"
-                onChange={handleInputChange}
-              />
-              {/* HATA MESAJI ALANI */}
-              {state.error && typeof state.error === 'object' && state.error.full_name && (
-                <p className="text-red-500 text-xs mt-1 font-medium">{state.error.full_name[0]}</p>
+          {/* FORM */}
+          <form action={formAction} className="space-y-6">
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <Label htmlFor="full_name">Ad Soyad</Label>
+                    <Input
+                      id="full_name" name="full_name"
+                      placeholder="Adınız Soyadınız"
+                      className="mt-1 h-12"
+                      value={formData.full_name}
+                      onChange={handleChange}
+                    />
+                    {state.error && typeof state.error === 'object' && state.error.full_name && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">{state.error.full_name[0]}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="email">E-posta</Label>
+                    <Input
+                      id="email" name="email" type="email"
+                      placeholder="ornek@mail.com"
+                      className="mt-1 h-12"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                    {state.error && typeof state.error === 'object' && state.error.email && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">{state.error.email[0]}</p>
+                    )}
+                  </div>
+                  <Button type="button" onClick={nextStep} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-indigo-200 transition-all hover:shadow-indigo-300">
+                    Devam Et <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </motion.div>
               )}
-            </div>
 
-            {/* Email */}
-            <div>
-              <Label htmlFor="email">E-posta</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="ornek@mail.com"
-                className="mt-1"
-                onChange={handleInputChange}
-              />
-              {state.error && typeof state.error === 'object' && state.error.email && (
-                <p className="text-red-500 text-xs mt-1 font-medium">{state.error.email[0]}</p>
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <Label htmlFor="phone">Telefon</Label>
+                    <Input
+                      id="phone" name="phone" type="tel"
+                      placeholder="5xxxxxxxxx" maxLength={10}
+                      className="mt-1 h-12"
+                      value={formData.phone}
+                      onChange={handleChange}
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Başında 0 olmadan, 10 haneli giriniz.</p>
+                    {state.error && typeof state.error === 'object' && state.error.phone && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">{state.error.phone[0]}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Şifre</Label>
+                    <Input
+                      id="password" name="password" type="password"
+                      className="mt-1 h-12"
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                    {state.error && typeof state.error === 'object' && state.error.password && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">{state.error.password[0]}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" onClick={prevStep} className="w-1/3 h-12 rounded-xl">
+                      Geri
+                    </Button>
+                    <Button type="button" onClick={nextStep} className="w-2/3 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-indigo-200 transition-all hover:shadow-indigo-300">
+                      Devam Et <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </div>
+                </motion.div>
               )}
-            </div>
 
-            {/* Telefon */}
-            <div>
-              <Label htmlFor="phone">Telefon</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="5xxxxxxxxx"
-                maxLength={10}
-                className="mt-1"
-                onChange={handleInputChange}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">Başında 0 olmadan, 10 haneli giriniz.</p>
-              {state.error && typeof state.error === 'object' && state.error.phone && (
-                <p className="text-red-500 text-xs mt-1 font-medium">{state.error.phone[0]}</p>
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-6"
+                >
+                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-3">
+                    <h3 className="font-semibold text-gray-900">Bilgilerinizi Kontrol Edin</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p><span className="font-medium text-gray-900">İsim:</span> {formData.full_name}</p>
+                      <p><span className="font-medium text-gray-900">E-posta:</span> {formData.email}</p>
+                      <p><span className="font-medium text-gray-900">Tel:</span> {formData.phone}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <LegalAgreement onAccept={setLegalAccepted} />
+                    <input type="hidden" name="legalAccepted" value={legalAccepted.toString()} />
+                    {state.error && typeof state.error === 'object' && state.error.legalAccepted && (
+                      <p className="text-red-500 text-xs mt-1 font-medium">{state.error.legalAccepted[0]}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" onClick={prevStep} className="w-1/3 h-12 rounded-xl">
+                      Geri
+                    </Button>
+                    <Button type="submit" disabled={!legalAccepted} className="w-2/3 h-12 bg-green-600 hover:bg-green-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-green-200 transition-all hover:shadow-green-300">
+                      Kaydı Tamamla
+                    </Button>
+                  </div>
+                </motion.div>
               )}
-            </div>
-
-            {/* Şifre */}
-            <div>
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                className="mt-1"
-                onChange={handleInputChange}
-              />
-              {state.error && typeof state.error === 'object' && state.error.password && (
-                <p className="text-red-500 text-xs mt-1 font-medium">{state.error.password[0]}</p>
-              )}
-            </div>
-
-            {/* Sözleşme (Gizli input ile değeri gönderiyoruz) */}
-            <div>
-              <LegalAgreement onAccept={setLegalAccepted} />
-              <input type="hidden" name="legalAccepted" value={legalAccepted.toString()} />
-              {state.error && typeof state.error === 'object' && state.error.legalAccepted && (
-                <p className="text-red-500 text-xs mt-1 font-medium">{state.error.legalAccepted[0]}</p>
-              )}
-            </div>
-
-            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2">
-              Kayıt Ol
-            </Button>
+            </AnimatePresence>
           </form>
+
+          <p className="text-center text-sm text-gray-500">
+            Zaten hesabınız var mı?{' '}
+            <Link href="/giris-yap" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+              Giriş Yapın
+            </Link>
+          </p>
         </div>
       </div>
 
-      {/* SAĞ TARAF (VİTRİN - AYNI KALSIN) */}
-      <div className="hidden lg:flex relative w-full bg-slate-900 items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581578731117-104f2a863180')] bg-cover bg-center opacity-20"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 to-slate-900/90"></div>
-        <div className="relative z-10 max-w-lg px-10 text-center">
-          <Star className="w-12 h-12 text-yellow-400 mx-auto mb-6" />
-          <h2 className="text-4xl font-bold text-white mb-4">Antalya'nın En İyileri</h2>
-          <p className="text-indigo-200 text-lg">Güvenilir hizmetin tek adresi.</p>
+      {/* SAĞ TARAF (VİTRİN ALANI) - %60 */}
+      <div className="hidden lg:block w-[60%] relative overflow-hidden">
+        {/* Arka Plan Resmi */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2053&auto=format&fit=crop')",
+          }}
+        />
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+        {/* İçerik */}
+        <div className="absolute inset-0 flex flex-col justify-end p-16">
+          <div className="max-w-xl">
+            <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
+              Hayalinizdeki Evi<br />
+              <span className="text-indigo-400">Gerçeğe Dönüştürün</span>
+            </h2>
+            <p className="text-lg text-gray-200 mb-12 max-w-lg">
+              Antalya'nın en seçkin ustaları ve hizmet sağlayıcıları, projeleriniz için bir tık uzağınızda.
+            </p>
+
+            {/* Glassmorphism Testimonial Card */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl max-w-md transform hover:-translate-y-1 transition-transform duration-300">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-indigo-500/20 rounded-lg">
+                  <Quote className="w-6 h-6 text-indigo-300" />
+                </div>
+                <div>
+                  <p className="text-white text-lg font-medium leading-relaxed mb-4">
+                    "Antalya Ustası sayesinde 1 saatte işimi hallettim. Gelen usta hem çok temiz çalıştı hem de tam zamanında geldi."
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                      AY
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">Ayşe Yılmaz</p>
+                      <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                        <Star className="w-3 h-3 fill-current" />
+                        <Star className="w-3 h-3 fill-current" />
+                        <Star className="w-3 h-3 fill-current" />
+                        <Star className="w-3 h-3 fill-current" />
+                        <Star className="w-3 h-3 fill-current" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
