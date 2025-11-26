@@ -20,3 +20,4 @@ export async function GET(request: NextRequest) {
   return NextResponse.redirect(new URL('/giris-yap?error=auth_callback_error', request.url))
 }
 
+

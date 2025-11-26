@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { providerRegisterSchema } from '@/lib/schemas'
 
 /**
  * Admin panelinden manuel olarak Usta (Provider) oluşturma
@@ -30,20 +31,41 @@ export async function createProviderManually(formData: FormData) {
       return { success: false, error: 'Bu işlem için admin yetkisi gereklidir.' }
     }
 
-    // 2. Form Verilerini Al
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const firstName = formData.get('firstName') as string
-    const lastName = formData.get('lastName') as string
-    const phone = formData.get('phone') as string
-    const businessName = formData.get('businessName') as string | null
-    const serviceId = formData.get('serviceId') as string
-    const districtId = formData.get('districtId') as string
+    // 2. Zod Validasyonu
+    const validatedFields = providerRegisterSchema.safeParse({
+      full_name: formData.get('full_name'),
+      email: formData.get('email'),
+      password: formData.get('password'),
+      phone: formData.get('phone'),
+      tax_number: formData.get('tax_number'),
+      business_name: formData.get('business_name'),
+      legalAccepted: true,
+      service_ids: formData.getAll('service_ids'),
+      district_ids: formData.getAll('district_ids'),
+    })
 
-    // Validasyon
-    if (!email || !password || !firstName || !lastName || !phone || !serviceId || !districtId) {
-      return { success: false, error: 'Lütfen tüm zorunlu alanları doldurun.' }
+    if (!validatedFields.success) {
+      return {
+        success: false,
+        error: validatedFields.error.flatten().fieldErrors,
+      }
     }
+
+    const {
+      email,
+      password,
+      phone,
+      business_name,
+      tax_number,
+      full_name,
+      service_ids,
+      district_ids,
+    } = validatedFields.data
+
+    // İsim ayrıştırma
+    const nameParts = full_name.trim().split(/\s+/)
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ') || ''
 
     // 3. Admin Client Oluştur (Service Role Key ile)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -61,19 +83,18 @@ export async function createProviderManually(formData: FormData) {
     })
 
     // 4. Kullanıcı Oluştur (Auth)
-    const fullName = `${firstName} ${lastName}`.trim()
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Otomatik onaylanmış
       user_metadata: {
-        full_name: fullName, // İsim veritabanına buradan gidecek!
+        full_name: full_name, // İsim veritabanına buradan gidecek!
         first_name: firstName,
         last_name: lastName,
         is_provider: true,
         is_verified: true, // Admin eklediği için direkt onaylı
-        // Eğer işletme adı varsa onu da ekle
-        business_name: businessName || '',
+        business_name: business_name || '',
+        tax_number: tax_number,
       },
     })
 
@@ -99,8 +120,8 @@ export async function createProviderManually(formData: FormData) {
       .update({
         first_name: firstName,
         last_name: lastName,
-        phone: phone || null,
-        business_name: businessName || null,
+        phone: phone,
+        business_name: business_name || null,
         is_provider: true,
         is_verified: true, // Elle eklenen direkt onaylı
         slug,
@@ -118,12 +139,14 @@ export async function createProviderManually(formData: FormData) {
     }
 
     // 7. Hizmet Ekle (provider_services)
+    const servicesData = service_ids.map((id) => ({
+      provider_id: userId,
+      service_id: parseInt(id),
+    }))
+
     const { error: serviceError } = await supabaseAdmin
       .from('provider_services')
-      .insert({
-        provider_id: userId,
-        service_id: parseInt(serviceId),
-      })
+      .insert(servicesData)
 
     if (serviceError) {
       console.error('Hizmet ekleme hatası:', serviceError)
@@ -137,12 +160,14 @@ export async function createProviderManually(formData: FormData) {
     }
 
     // 8. Bölge Ekle (provider_locations)
+    const locationsData = district_ids.map((id) => ({
+      provider_id: userId,
+      district_id: parseInt(id),
+    }))
+
     const { error: locationError } = await supabaseAdmin
       .from('provider_locations')
-      .insert({
-        provider_id: userId,
-        district_id: parseInt(districtId),
-      })
+      .insert(locationsData)
 
     if (locationError) {
       console.error('Bölge ekleme hatası:', locationError)
