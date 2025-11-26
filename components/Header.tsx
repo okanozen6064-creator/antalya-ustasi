@@ -79,9 +79,53 @@ export default function Header() {
         <div className="flex items-center gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            {/* 1. SOYUT LOGO İKONU (SVG) */}
+            {/* YENİ LOGO (SVG) */}
+            <div className="relative w-12 h-12 md:w-14 md:h-14">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
+                    <defs>
+                        <linearGradient id="pinGradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#FB923C" /> <stop offset="1" stopColor="#EA580C" /> </linearGradient>
+                    </defs>
+                  
+                    <path 
+                        d="M50 5C27.9 5 10 22.9 10 45C10 69 50 95 50 95C50 95 90 69 90 45C90 22.9 72.1 5 50 5Z" 
+                        fill="url(#pinGradient)" 
+                    />
+                  
+                    <path 
+                        d="M30 42L50 26L70 42V55H30V42Z" 
+                        fill="white" 
+                    />
+                  
+                    <path 
+                        d="M50 58C46.1 58 43 61.1 43 65C43 68.9 46.1 72 50 72C53.9 72 57 68.9 57 65C57 61.1 53.9 58 50 58ZM50 69C47.8 69 46 67.2 46 65C46 62.8 47.8 61 50 61C52.2 61 54 62.8 54 65C54 67.2 52.2 69 50 69Z" 
+                        fill="white" 
+                    />
+                    <path 
+                        d="M60 65H63M37 65H40M50 52V55M50 75V78" 
+                        stroke="white" 
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                    />
+                </svg>
+            </div>
+
+            <div className="flex flex-col justify-center -space-y-1">
+                <span className="text-xl md:text-3xl font-bold text-slate-800 tracking-tight leading-none">
+                    ANTALYA
+                </span>
+                <span className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                    USTASI
+                </span>
+            </div>
+            <span className="w-2 h-2 md:w-3 md:h-3 bg-orange-500 rounded-full mb-1 self-end mb-2"></span>
+          </Link>
+
+          {/* ESKİ LOGO (YORUM SATIRI)
+          <Link href="/" className="flex items-center gap-2.5 group">
+            {/* 1. SOYUT LOGO İKONU (SVG) * /}
             <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-indigo-600 rounded-xl shadow-sm transform group-hover:rotate-3 transition-transform duration-300">
-              {/* Beyaz soyut yapı sembolü */}
+              {/* Beyaz soyut yapı sembolü * /}
               <svg 
                 viewBox="0 0 24 24" 
                 fill="none" 
@@ -106,7 +150,7 @@ export default function Header() {
               </svg>
             </div>
 
-            {/* 2. MODERN TİPOGRAFİ */}
+            {/* 2. MODERN TİPOGRAFİ * /}
             <div className="flex flex-col justify-center -space-y-1">
               <span className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tighter leading-none">
                 ANTALYA
@@ -117,6 +161,7 @@ export default function Header() {
               </span>
             </div>
           </Link>
+          */}
 
           {/* Masaüstü Menü Linkleri */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
