@@ -6,7 +6,7 @@ import { registerClient } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LegalAgreement } from '@/components/auth/LegalAgreement';
+import LegalAgreement from '@/components/auth/LegalAgreement'
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
