@@ -22,7 +22,7 @@ import {
 import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PageContainer from '@/components/PageContainer'
-import { LegalAgreement } from '@/components/auth/LegalAgreement'
+import LegalAgreement from '@/components/auth/LegalAgreement'
 
 interface Service {
   id: string
