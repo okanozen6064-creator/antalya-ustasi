@@ -349,11 +349,11 @@ export default function ClientRegisterPage() {
         <div className="absolute inset-0 flex flex-col justify-end p-16">
           <div className="max-w-xl">
             <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
-              Hayalinizdeki Evi<br />
-              <span className="text-indigo-400">Gerçeğe Dönüştürün</span>
+              Hayatınızı Kolaylaştıracak<br />
+              <span className="text-indigo-400">Profesyoneller</span>
             </h2>
             <p className="text-lg text-gray-200 mb-12 max-w-lg">
-              Antalya'nın en seçkin ustaları ve hizmet sağlayıcıları, projeleriniz için bir tık uzağınızda.
+              Ev tadilatından araç bakımına, özel dersten temizliğe kadar ihtiyacınız olan tüm hizmetler tek platformda.
             </p>
 
             {/* Glassmorphism Testimonial Card */}

@@ -131,7 +131,7 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
 
   const handleAccept = () => {
     if (!modalCheckboxChecked) return // Checkbox işaretli değilse buton çalışmasın
-    
+
     setAccepted(true)
     onAccept(true)
     setOpen(false)
@@ -146,40 +146,57 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
     }
   }
 
+  const toggleAccepted = () => {
+    if (accepted) {
+      setAccepted(false)
+      onAccept(false)
+    } else {
+      setOpen(true)
+    }
+  }
+
   return (
     <div className="space-y-2">
-      <div className="flex items-start space-x-2">
-        <Checkbox
-          id="legal-agreement"
-          checked={accepted}
-          onCheckedChange={(checked) => {
-            if (!checked) {
-              setAccepted(false)
-              onAccept(false)
-            } else if (!accepted) {
-              // Checkbox işaretlenmeye çalışıldığında modal'ı aç
-              setOpen(true)
-            }
-          }}
-          className="mt-1"
-        />
+      {/* Redesigned Checkbox Card */}
+      <div
+        onClick={toggleAccepted}
+        className={`
+          flex items-start space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+          ${accepted
+            ? 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
+            : 'bg-white border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
+          }
+        `}
+      >
+        <div className="pt-1">
+          <Checkbox
+            id="legal-agreement"
+            checked={accepted}
+            onCheckedChange={(checked) => {
+              // This is handled by the parent div's onClick, but we keep it for accessibility
+              // If clicked directly, we need to stop propagation or handle logic carefully
+              // Here we just let the parent handle it to avoid double toggle
+            }}
+            className="h-6 w-6 border-2 border-gray-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+          />
+        </div>
         <div className="flex-1">
           <label
             htmlFor="legal-agreement"
-            className="text-sm text-gray-700 cursor-pointer leading-relaxed"
+            className="text-sm font-medium text-gray-900 cursor-pointer leading-relaxed block pointer-events-none" // pointer-events-none to let click pass to div
           >
-            <span>Kullanıcı Sözleşmesi ve KVKK Metni'ni okudum, onaylıyorum.</span>{' '}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                setOpen(true)
-              }}
-              className="text-indigo-600 hover:text-indigo-800 underline font-medium"
-            >
-              Sözleşmeyi Oku
-            </button>
+            Kullanıcı Sözleşmesi ve KVKK Metni'ni okudum, anladım ve onaylıyorum.
           </label>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation() // Prevent triggering the checkbox toggle
+              setOpen(true)
+            }}
+            className="text-indigo-600 hover:text-indigo-800 underline text-sm mt-1 font-medium"
+          >
+            Sözleşmeyi Oku
+          </button>
         </div>
       </div>
 
@@ -196,7 +213,7 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
             <div className="whitespace-pre-line text-sm leading-relaxed text-gray-800">
               {LEGAL_TEXT}
             </div>
-            
+
             {/* Metnin en altına checkbox ekle */}
             <div className="mt-4 pt-4 border-t flex items-start space-x-2">
               <Checkbox
@@ -239,4 +256,3 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
     </div>
   )
 }
-
