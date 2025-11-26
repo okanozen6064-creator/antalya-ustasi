@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://antalyaustasi.com'
 
@@ -41,11 +43,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const servicePages: MetadataRoute.Sitemap =
       services && !servicesError
         ? services.map((service) => ({
-            url: `${cleanBaseUrl}/hizmet/${service.slug}`,
-            lastModified: service.updated_at ? new Date(service.updated_at) : new Date(),
-            changeFrequency: 'weekly' as const,
-            priority: 0.7,
-          }))
+          url: `${cleanBaseUrl}/hizmet/${service.slug}`,
+          lastModified: service.updated_at ? new Date(service.updated_at) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        }))
         : []
 
     // Dinamik Profiller: profiles tablosundaki (is_provider=true) tüm slug'ları çek
@@ -60,11 +62,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const profilePages: MetadataRoute.Sitemap =
       profiles && !profilesError
         ? profiles.map((profile) => ({
-            url: `${cleanBaseUrl}/profil/${profile.slug}`,
-            lastModified: profile.updated_at ? new Date(profile.updated_at) : new Date(),
-            changeFrequency: 'weekly' as const,
-            priority: 0.6,
-          }))
+          url: `${cleanBaseUrl}/profil/${profile.slug}`,
+          lastModified: profile.updated_at ? new Date(profile.updated_at) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.6,
+        }))
         : []
 
     // Tüm sayfaları birleştir
