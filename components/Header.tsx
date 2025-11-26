@@ -84,7 +84,10 @@ export default function Header() {
               <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
                 <defs>
                   <linearGradient id="pinGradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#6366F1" /> <stop offset="1" stopColor="#4338CA" /> </linearGradient>
+                    <stop offset="0" stopColor="#CBD5E1" /> {/* Slate-300 (Silver) */}
+                    <stop offset="0.3" stopColor="#6366F1" /> {/* Indigo-500 */}
+                    <stop offset="1" stopColor="#4338CA" /> {/* Indigo-700 */}
+                  </linearGradient>
                 </defs>
 
                 <path
