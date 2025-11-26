@@ -114,18 +114,18 @@ export default function Header() {
               <span className="text-xl md:text-3xl font-bold text-slate-800 tracking-tight leading-none">
                 ANTALYA
               </span>
-              <span className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
-                USTASI
-              </span>
+              <div className="flex items-baseline">
+                <span className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                  USTASI
+                </span>
+                <span className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-indigo-600 rounded-full ml-1"></span>
+              </div>
             </div>
-            <span className="w-2 h-2 md:w-3 md:h-3 bg-indigo-600 rounded-full mb-1 self-end mb-2"></span>
           </Link>
 
           {/* ESKİ LOGO (YORUM SATIRI)
           <Link href="/" className="flex items-center gap-2.5 group">
-            {/* 1. SOYUT LOGO İKONU (SVG) * /}
             <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-indigo-600 rounded-xl shadow-sm transform group-hover:rotate-3 transition-transform duration-300">
-              {/* Beyaz soyut yapı sembolü * /}
               <svg 
                 viewBox="0 0 24 24" 
                 fill="none" 
@@ -150,7 +150,6 @@ export default function Header() {
               </svg>
             </div>
 
-            {/* 2. MODERN TİPOGRAFİ * /}
             <div className="flex flex-col justify-center -space-y-1">
               <span className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tighter leading-none">
                 ANTALYA
