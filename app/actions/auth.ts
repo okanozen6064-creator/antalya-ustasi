@@ -14,76 +14,55 @@ export type ActionState = {
 /**
  * Müşteri Kayıt İşlemi
  */
+// --- MÜŞTERİ KAYDI ---
 export async function registerClient(prevState: ActionState, formData: FormData): Promise<ActionState> {
-    try {
-        // 1. Form verilerini objeye çevir
-        const rawData = {
-            full_name: formData.get('full_name'),
-            email: formData.get('email'),
-            password: formData.get('password'),
-            phone: formData.get('phone'),
-            legalAccepted: formData.get('legalAccepted') === 'on' || formData.get('legalAccepted') === 'true' ? true : false,
-        }
+    const rawData = {
+        full_name: formData.get('full_name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        phone: formData.get('phone'),
+        // Checkbox "on" gelirse true, yoksa false
+        legalAccepted: formData.get('legalAccepted') === 'true',
+    };
 
-        // 2. Zod Validasyonu
-        const validatedFields = clientRegisterSchema.safeParse(rawData)
+    // 🛑 VALIDASYON KONTROLÜ
+    const validated = clientRegisterSchema.safeParse(rawData);
 
-        if (!validatedFields.success) {
-            return {
-                success: false,
-                error: validatedFields.error.flatten().fieldErrors,
-            }
-        }
-
-        const { email, password, full_name, phone } = validatedFields.data
-
-        // 3. Supabase ile kayıt
-        const supabase = await createClient()
-
-        // İsim ayrıştırma
-        const nameParts = full_name.trim().split(/\s+/)
-        const firstName = nameParts[0]
-        const lastName = nameParts.slice(1).join(' ') || ''
-
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name,
-                    first_name: firstName,
-                    last_name: lastName,
-                    phone,
-                    is_provider: false,
-                },
-            },
-        })
-
-        if (error) {
-            return {
-                success: false,
-                error: error.message,
-            }
-        }
-
-        if (!data.user) {
-            return {
-                success: false,
-                error: 'Kayıt işlemi başarısız oldu.',
-            }
-        }
-
-        return {
-            success: true,
-            message: 'Kayıt başarılı! Lütfen e-posta adresinizi doğrulayın.',
-        }
-
-    } catch (error: any) {
+    if (!validated.success) {
         return {
             success: false,
-            error: 'Beklenmeyen bir hata oluştu.',
-        }
+            message: "Lütfen formdaki kırmızı alanları düzeltin.",
+            error: validated.error.flatten().fieldErrors,
+        };
     }
+
+    // ✅ HER ŞEY TAMAMSA SUPABASE'E GİT
+    const supabase = await createClient();
+
+    // İsim ayrıştırma
+    const nameParts = validated.data.full_name.trim().split(/\s+/)
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    const { data, error } = await supabase.auth.signUp({
+        email: validated.data.email,
+        password: validated.data.password,
+        options: {
+            data: {
+                full_name: validated.data.full_name,
+                first_name: firstName,
+                last_name: lastName,
+                phone: validated.data.phone,
+                is_provider: false,
+            },
+        },
+    });
+
+    if (error) {
+        return { success: false, message: error.message };
+    }
+
+    return { success: true, message: "Kayıt başarılı! E-postanızı kontrol edin." };
 }
 
 /**

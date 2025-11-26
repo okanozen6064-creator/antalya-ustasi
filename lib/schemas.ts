@@ -1,24 +1,24 @@
 import { z } from 'zod';
 
 // 1. Temel Kurallar (Reusable)
-const phoneRegex = /^5[0-9]{9}$/;
-const taxNumberRegex = /^[0-9]{10,11}$/;
+const phoneRegex = /^5[0-9]{9}$/; // 5 ile başlayan 10 hane
+const taxNumberRegex = /^[0-9]{10,11}$/; // Sadece rakam
 
 // 2. Müşteri Kayıt Şeması
 export const clientRegisterSchema = z.object({
-    full_name: z.string().min(2, "Ad Soyad en az 2 karakter olmalıdır."),
-    email: z.string().email("Geçerli bir e-posta adresi giriniz."),
-    password: z.string().min(6, "Şifre en az 6 karakter olmalıdır."),
-    phone: z.string().regex(phoneRegex, "Telefon numarası 5 ile başlamalı ve 10 haneli olmalıdır (Örn: 532...)"),
-    legalAccepted: z.literal(true, { message: "Sözleşmeyi onaylamanız gerekmektedir." }),
+    full_name: z.string().min(3, { message: "Ad Soyad en az 3 karakter olmalıdır." }),
+    email: z.string().email({ message: "Geçerli bir e-posta adresi giriniz." }),
+    password: z.string().min(6, { message: "Şifre en az 6 karakter olmalıdır." }),
+    phone: z.string().regex(phoneRegex, { message: "Telefon: Başında 0 olmadan, 5 ile başlayan 10 hane giriniz (Örn: 5321234567)." }),
+    legalAccepted: z.literal(true, { errorMap: () => ({ message: "Sözleşmeyi onaylamanız şarttır." }) }),
 });
 
 // 3. Usta Kayıt Şeması (Müşteriye ek olarak)
 export const providerRegisterSchema = clientRegisterSchema.extend({
-    business_name: z.string().optional(), // Opsiyonel
-    tax_number: z.string().regex(taxNumberRegex, "Vergi numarası 10 veya 11 haneli olmalıdır."),
-    service_ids: z.array(z.string()).min(1, "En az bir hizmet seçmelisiniz."),
-    district_ids: z.array(z.string()).min(1, "En az bir hizmet bölgesi seçmelisiniz."),
+    business_name: z.string().optional(),
+    tax_number: z.string().regex(taxNumberRegex, { message: "Geçerli bir Vergi veya TC No giriniz." }),
+    service_ids: z.array(z.string()).min(1, { message: "En az bir hizmet seçmelisiniz." }),
+    district_ids: z.array(z.string()).min(1, { message: "En az bir bölge seçmelisiniz." }),
 });
 
 // 4. İş Talebi (Teklif İste) Şeması
