@@ -76,28 +76,30 @@ export default async function Home() {
       <FeaturedPros />
 
       {/* 2. İSTATİSTİK BANDI */}
-      <div className="bg-white border-y border-gray-100 py-10">
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">1.500+</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wide">Kayıtlı Esnaf</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">89</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wide">Farklı Kategori</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">19</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wide">İlçe Kapsamı</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">%100</div>
-              <div className="text-sm text-gray-500 uppercase tracking-wide">Müşteri Memnuniyeti</div>
+      <FadeIn delay={0.4}>
+        <div className="bg-white border-y border-gray-100 py-10">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              <div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">1.500+</div>
+                <div className="text-sm text-gray-500 uppercase tracking-wide">Kayıtlı Esnaf</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">89</div>
+                <div className="text-sm text-gray-500 uppercase tracking-wide">Farklı Kategori</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">19</div>
+                <div className="text-sm text-gray-500 uppercase tracking-wide">İlçe Kapsamı</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">%100</div>
+                <div className="text-sm text-gray-500 uppercase tracking-wide">Müşteri Memnuniyeti</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </FadeIn>
 
       {/* 3. NEDEN BİZ? */}
       <section className="py-20 bg-white">
