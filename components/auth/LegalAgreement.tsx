@@ -129,7 +129,9 @@ export function LegalAgreement({ onAccept }: LegalAgreementProps) {
   const [accepted, setAccepted] = useState(false)
   const [modalCheckboxChecked, setModalCheckboxChecked] = useState(false)
 
-  const handleAccept = () => {
+  const handleAccept = (e: React.MouseEvent) => {
+    e.preventDefault() // Form submit olmasını engelle
+    e.stopPropagation() // Event bubbling engelle
     if (!modalCheckboxChecked) return // Checkbox işaretli değilse buton çalışmasın
 
     setAccepted(true)
