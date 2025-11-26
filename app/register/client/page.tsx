@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion'; // Animasyon için
 import Link from 'next/link';
 import { CheckCircle2, ArrowRight, ArrowLeft, Star, Quote } from 'lucide-react';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 
 const initialState = {
   success: false,
@@ -32,9 +33,13 @@ export default function ClientRegisterPage() {
     phone: '',
     password: ''
   });
+  const [isTyping, setIsTyping] = useState(false);
+
+  useUnsavedChanges(isTyping);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setIsTyping(true);
   };
 
   // Adım İlerletme Kontrolü
@@ -59,6 +64,7 @@ export default function ClientRegisterPage() {
   // Başarı Durumu
   useEffect(() => {
     if (state.success) {
+      setIsTyping(false);
       toast.success(state.message);
       router.push('/register/success');
     } else if (state.message) {
@@ -68,11 +74,11 @@ export default function ClientRegisterPage() {
 
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      
+
       {/* SOL TARA (FORM ALANI) */}
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="mx-auto w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center lg:text-left">
             <h2 className="mt-6 text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -89,7 +95,7 @@ export default function ClientRegisterPage() {
           {/* Progress Bar (Adım Göstergesi) */}
           <div className="relative pt-4 pb-6">
             <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-100">
-              <motion.div 
+              <motion.div
                 initial={{ width: "33%" }}
                 animate={{ width: step === 1 ? "33%" : step === 2 ? "66%" : "100%" }}
                 className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-600 transition-all duration-500"
@@ -105,7 +111,7 @@ export default function ClientRegisterPage() {
           {/* FORM */}
           <form action={formAction} className="space-y-6">
             <AnimatePresence mode="wait">
-              
+
               {/* ADIM 1: KİMLİK */}
               {step === 1 && (
                 <motion.div
@@ -117,9 +123,9 @@ export default function ClientRegisterPage() {
                 >
                   <div>
                     <Label htmlFor="full_name">Ad Soyad</Label>
-                    <Input 
-                      id="full_name" name="full_name" 
-                      placeholder="Örn: Ahmet Yılmaz" 
+                    <Input
+                      id="full_name" name="full_name"
+                      placeholder="Örn: Ahmet Yılmaz"
                       value={formData.full_name} onChange={handleChange}
                       className="mt-1"
                     />
@@ -129,9 +135,9 @@ export default function ClientRegisterPage() {
                   </div>
                   <div>
                     <Label htmlFor="email">E-posta Adresi</Label>
-                    <Input 
-                      id="email" name="email" type="email" 
-                      placeholder="ornek@mail.com" 
+                    <Input
+                      id="email" name="email" type="email"
+                      placeholder="ornek@mail.com"
                       value={formData.email} onChange={handleChange}
                       className="mt-1"
                     />
@@ -156,9 +162,9 @@ export default function ClientRegisterPage() {
                 >
                   <div>
                     <Label htmlFor="phone">Telefon Numarası</Label>
-                    <Input 
-                      id="phone" name="phone" type="tel" 
-                      placeholder="5xxxxxxxxx" maxLength={10} 
+                    <Input
+                      id="phone" name="phone" type="tel"
+                      placeholder="5xxxxxxxxx" maxLength={10}
                       value={formData.phone} onChange={handleChange}
                       className="mt-1"
                     />
@@ -169,8 +175,8 @@ export default function ClientRegisterPage() {
                   </div>
                   <div>
                     <Label htmlFor="password">Şifre Belirle</Label>
-                    <Input 
-                      id="password" name="password" type="password" 
+                    <Input
+                      id="password" name="password" type="password"
                       value={formData.password} onChange={handleChange}
                       className="mt-1"
                     />
@@ -242,11 +248,11 @@ export default function ClientRegisterPage() {
               <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
             </div>
           </div>
-          
+
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
             Antalya'nın En İyi Ustalarıyla Tanışın
           </h2>
-          
+
           <p className="text-lg text-indigo-200 mb-10">
             Eviniz için gereken her şey tek bir platformda. Güvenilir, hızlı ve onaylı hizmetin adresi.
           </p>

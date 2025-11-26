@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DemoModal } from "@/components/common/DemoModal";
 import ConstructionAlert from "@/components/common/ConstructionAlert";
+import ScrollToTop from "@/components/common/ScrollToTop";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ScrollToTop />
         <ConstructionAlert />
         <Header />
         {children}
