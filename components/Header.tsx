@@ -167,7 +167,7 @@ export default function Header() {
 
           {/* Masaüstü Menü Linkleri */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <Link href="/hizmetler" className="hover:text-indigo-600 transition-colors">
+            <Link href="/#kategoriler" className="hover:text-indigo-600 transition-colors">
               Kategoriler
             </Link>
             <Link href="/nasil-calisir" className="hover:text-indigo-600 transition-colors">
@@ -250,7 +250,7 @@ export default function Header() {
                   </SheetTrigger>
                   <SheetContent side="right">
                     <div className="flex flex-col gap-4 mt-8">
-                      <Link href="/hizmetler" className="text-lg font-medium">
+                      <Link href="/#kategoriler" className="text-lg font-medium">
                         Kategoriler
                       </Link>
                       <Link href="/nasil-calisir" className="text-lg font-medium">

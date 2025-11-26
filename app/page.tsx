@@ -193,7 +193,9 @@ export default async function Home() {
       </section>
 
       {/* Category Cards Section */}
-      <CategoryCards />
+      <section id="kategoriler">
+        <CategoryCards />
+      </section>
     </>
   )
 }
