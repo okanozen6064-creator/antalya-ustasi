@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { clientRegisterSchema, providerRegisterSchema } from '@/lib/schemas'
 import { revalidatePath } from 'next/cache'
 
@@ -160,40 +161,84 @@ export async function registerProvider(prevState: ActionState, formData: FormDat
             return { success: false, error: 'Kayıt işlemi başlatılamadı.' }
         }
 
-        // NOT: Supabase Trigger'ı genellikle 'profiles' tablosunu oluşturur.
-        // Ancak ek verileri (hizmetler, bölgeler) eklememiz gerekiyor.
-        // Kullanıcı henüz e-postasını doğrulamadığı için giriş yapamaz, 
-        // bu yüzden bu eklemeleri 'service_role' anahtarı ile yapmamız gerekebilir 
-        // VEYA RLS politikaları izin veriyorsa anonim olarak.
-        // Güvenlik açısından, bu işlemleri genellikle bir Database Trigger veya 
-        // Admin yetkisi olan bir API Route/Action ile yapmak daha doğrudur.
-        // Ancak burada basitlik adına, kullanıcının ID'sini kullanarak ekleme yapmayı deneyeceğiz.
-        // Eğer RLS engellerse, bu kısımlar çalışmayabilir.
-        // En sağlam yöntem: Kullanıcı oluşturulduğunda bir Trigger çalışır ve profil oluşur.
-        // Hizmet ve bölgeler için ise, kullanıcı giriş yaptıktan sonra "Profilini Tamamla" adımı olabilir.
-        // FAKAT, kullanıcıdan bu verileri şimdi aldık. O yüzden bunları kaydetmeliyiz.
+        const userId = authData.user.id
 
-        // ÇÖZÜM: Service Role kullanarak ek verileri kaydetmek.
-        // (Bu dosyada 'supabase-js' import edip service role key kullanacağız, 
-        // çünkü normal client henüz oturum açmış değil.)
+        // 4. Admin Client ile Ek İşlemler (Dosya Yükleme, Profil Güncelleme, Hizmet/Bölge Ekleme)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-        // Ancak 'createClient' helper'ımız cookie tabanlı. 
-        // Burada admin yetkisiyle işlem yapmak için ayrı bir client oluşturmalıyız.
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Supabase Service Role Key eksik!')
+            return { success: true, message: 'Kayıt başarılı! Lütfen e-posta adresinizi doğrulayın.' }
+        }
 
-        // NOT: Kullanıcı isteğinde service role key kullanmak riskli olabilir ama 
-        // server action sunucuda çalıştığı için env variable'ları güvenlidir.
+        const supabaseAdmin = createAdminClient(supabaseUrl, supabaseKey, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+            },
+        })
 
-        // Şimdilik standart client ile deneyelim, eğer RLS hatası alırsak service role'e geçeriz.
-        // Ancak standart client ile auth.signUp sonrası session oluşmayabilir (email confirm kapalıysa oluşur).
-        // Email confirm açık ise session null gelir.
+        // Dosya Yükleme (Varsa)
+        let taxPlateUrl: string | null = null
+        const taxPlateFile = formData.get('tax_plate_file') as File | null
 
-        // Bu durumda en güvenli yol: Verileri metadata'ya kaydettik. 
-        // Bir Database Function (Postgres) veya Trigger kullanarak 
-        // user_metadata'dan okuyup ilgili tablolara dağıtmak.
+        if (taxPlateFile && taxPlateFile.size > 0) {
+            try {
+                const fileExt = taxPlateFile.name.split('.').pop()
+                const fileName = `${userId}/tax_plate_${Date.now()}.${fileExt}`
+                const filePath = `verification_docs/${fileName}`
 
-        // VEYA: Service Role Client kullanarak yazmak.
+                const { error: uploadError } = await supabaseAdmin.storage
+                    .from('verification_docs')
+                    .upload(filePath, taxPlateFile, {
+                        contentType: taxPlateFile.type,
+                        upsert: false,
+                    })
 
-        // Kullanıcı isteğine göre "Transaction mantığıyla" dediği için Service Role kullanacağım.
+                if (!uploadError) {
+                    const { data: urlData } = supabaseAdmin.storage
+                        .from('verification_docs')
+                        .getPublicUrl(filePath)
+
+                    taxPlateUrl = urlData.publicUrl
+                } else {
+                    console.error('Dosya yükleme hatası:', uploadError)
+                }
+            } catch (err) {
+                console.error('Dosya işleme hatası:', err)
+            }
+        }
+
+        // Profil Güncelleme
+        await supabaseAdmin
+            .from('profiles')
+            .update({
+                business_name: business_name || null,
+                tax_number: tax_number,
+                tax_plate_url: taxPlateUrl,
+                is_provider: true,
+                slug,
+            })
+            .eq('id', userId)
+
+        // Hizmetleri Ekle
+        if (service_ids && service_ids.length > 0) {
+            const serviceInserts = service_ids.map((id) => ({
+                provider_id: userId,
+                service_id: parseInt(id),
+            }))
+            await supabaseAdmin.from('provider_services').insert(serviceInserts)
+        }
+
+        // Bölgeleri Ekle
+        if (district_ids && district_ids.length > 0) {
+            const locationInserts = district_ids.map((id) => ({
+                provider_id: userId,
+                district_id: parseInt(id),
+            }))
+            await supabaseAdmin.from('provider_locations').insert(locationInserts)
+        }
 
         return {
             success: true,

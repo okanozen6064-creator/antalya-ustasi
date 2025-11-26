@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { registerProvider } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +22,6 @@ import {
 import { AlertCircle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PageContainer from '@/components/PageContainer'
-import { getURL } from '@/lib/utils'
 import { LegalAgreement } from '@/components/auth/LegalAgreement'
 
 interface Service {
@@ -33,7 +34,7 @@ interface District {
   name: string
 }
 
-interface FormData {
+interface FormDataState {
   firstName: string
   lastName: string
   email: string
@@ -46,9 +47,16 @@ interface FormData {
   selectedDistricts: number[]
 }
 
+const initialState = {
+  success: false,
+  error: undefined,
+  message: undefined,
+}
+
 export default function ProRegisterPage() {
+  const [state, formAction] = useFormState(registerProvider, initialState)
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormDataState>({
     firstName: '',
     lastName: '',
     email: '',
@@ -63,7 +71,6 @@ export default function ProRegisterPage() {
   const [services, setServices] = useState<Service[]>([])
   const [districts, setDistricts] = useState<District[]>([])
   const [errorMessage, setErrorMessage] = useState('')
-  const [loading, setLoading] = useState(false)
   const [legalAccepted, setLegalAccepted] = useState(false)
   const router = useRouter()
 
@@ -72,23 +79,14 @@ export default function ProRegisterPage() {
     const fetchData = async () => {
       try {
         const supabase = createClient()
-        
+
         const [servicesResult, districtsResult] = await Promise.all([
           supabase.from('services').select('id, name').order('name', { ascending: true }),
           supabase.from('antalya_districts').select('id, name').order('name', { ascending: true }),
         ])
 
-        if (servicesResult.error) {
-          console.error('Hizmetler yüklenirken hata:', servicesResult.error)
-        } else {
-          setServices(servicesResult.data || [])
-        }
-
-        if (districtsResult.error) {
-          console.error('İlçeler yüklenirken hata:', districtsResult.error)
-        } else {
-          setDistricts(districtsResult.data || [])
-        }
+        if (servicesResult.data) setServices(servicesResult.data)
+        if (districtsResult.data) setDistricts(districtsResult.data)
       } catch (err) {
         console.error('Beklenmeyen hata:', err)
       }
@@ -97,7 +95,26 @@ export default function ProRegisterPage() {
     fetchData()
   }, [])
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  // Server Action Başarı Durumu
+  useEffect(() => {
+    if (state.success) {
+      router.push('/register/success')
+    } else if (state.error) {
+      // Hata varsa kullanıcıya göster (Toast veya Alert)
+      if (typeof state.error === 'string') {
+        setErrorMessage(state.error)
+      } else {
+        // Field error'ları varsa, genel bir mesaj göster ve ilgili adıma git
+        setErrorMessage('Lütfen formdaki hataları düzeltin.')
+        // Hangi adımda hata olduğunu bulup oraya yönlendirebiliriz ama 
+        // şimdilik son adımda kalıp hataları göstermek daha mantıklı olabilir
+        // veya kullanıcıyı ilgili adıma geri gönderebiliriz.
+        // Zod hatalarını state.error objesinden okuyacağız.
+      }
+    }
+  }, [state, router])
+
+  const updateFormData = (field: keyof FormDataState, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -121,12 +138,7 @@ export default function ProRegisterPage() {
 
   const validateStep = (step: number): boolean => {
     setErrorMessage('')
-    
-    // Sihirli Vergi Numarası (VIP/Tester için)
-    const MAGIC_TAX_NUMBER = '1111111111'
-    const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
-    const isVipUser = cleanTaxNumber === MAGIC_TAX_NUMBER
-    
+
     if (step === 1) {
       if (!formData.firstName.trim() || !formData.lastName.trim()) {
         setErrorMessage('Ad ve Soyad gereklidir!')
@@ -140,7 +152,6 @@ export default function ProRegisterPage() {
         setErrorMessage('Şifre en az 6 karakter olmalıdır!')
         return false
       }
-      // Telefon validasyonu (5 ile başlayan 10 haneli)
       if (formData.phone.trim()) {
         const phoneRegex = /^5[0-9]{9}$/
         const cleanPhone = formData.phone.replace(/\s/g, '')
@@ -150,43 +161,13 @@ export default function ProRegisterPage() {
         }
       }
     }
-    
+
     if (step === 2) {
-      // Vergi Numarası validasyonu (10-11 karakter, sadece rakam)
       if (!formData.taxNumber.trim()) {
         setErrorMessage('Vergi Numarası gereklidir!')
         return false
       }
-      if (cleanTaxNumber.length < 10 || cleanTaxNumber.length > 11) {
-        setErrorMessage('Geçerli bir Vergi No veya TC Kimlik No giriniz. (10-11 karakter)')
-        return false
-      }
-      if (!/^\d+$/.test(cleanTaxNumber)) {
-        setErrorMessage('Geçerli bir Vergi No veya TC Kimlik No giriniz. (Sadece rakam)')
-        return false
-      }
-      
-      // Vergi Levhası kontrolü (VIP kullanıcılar için opsiyonel)
-      if (!isVipUser) {
-        if (!formData.taxPlateFile) {
-          setErrorMessage('Vergi Levhası yüklemeniz zorunludur!')
-          return false
-        }
-        
-        // Dosya tipi kontrolü (Resim veya PDF)
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
-        if (!allowedTypes.includes(formData.taxPlateFile.type)) {
-          setErrorMessage('Vergi Levhası resim (JPG, PNG, WEBP) veya PDF formatında olmalıdır.')
-          return false
-        }
-        
-        // Dosya boyutu kontrolü (max 5MB)
-        if (formData.taxPlateFile.size > 5 * 1024 * 1024) {
-          setErrorMessage('Vergi Levhası dosyası en fazla 5MB olabilir.')
-          return false
-        }
-      }
-      
+
       if (formData.selectedServices.length === 0) {
         setErrorMessage('En az bir hizmet seçmelisiniz!')
         return false
@@ -196,7 +177,7 @@ export default function ProRegisterPage() {
         return false
       }
     }
-    
+
     return true
   }
 
@@ -211,184 +192,40 @@ export default function ProRegisterPage() {
     setErrorMessage('')
   }
 
-  const handleSubmit = async () => {
-    if (!validateStep(2)) return
+  const handleFinalSubmit = () => {
+    // Form verilerini FormData'ya çevirip action'ı çağır
+    const data = new FormData()
+    data.append('full_name', `${formData.firstName} ${formData.lastName}`)
+    data.append('email', formData.email)
+    data.append('password', formData.password)
+    data.append('phone', formData.phone)
+    data.append('tax_number', formData.taxNumber)
+    data.append('business_name', formData.businessName)
+    data.append('legalAccepted', legalAccepted.toString())
 
-    // Legal agreement kontrolü
-    if (!legalAccepted) {
-      setErrorMessage('Lütfen kullanıcı sözleşmesini okuyup onaylayın!')
-      return
+    formData.selectedServices.forEach(id => data.append('service_ids', id))
+    formData.selectedDistricts.forEach(id => data.append('district_ids', id.toString()))
+
+    if (formData.taxPlateFile) {
+      data.append('tax_plate_file', formData.taxPlateFile)
     }
 
-    setErrorMessage('')
-    setLoading(true)
-
-    try {
-      const supabase = createClient()
-
-      // ADIM 1: Kullanıcıyı oluştur
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${getURL()}auth/callback`,
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            is_provider: true,
-          },
-        },
-      })
-
-      if (authError || !authData.user) {
-        // Hata mesajlarını Türkçe ve açıklayıcı hale getir
-        let userFriendlyMessage = authError?.message || 'Kullanıcı oluşturulamadı!'
-        
-        if (authError) {
-          if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
-            userFriendlyMessage = 'Bu e-posta adresi zaten kayıtlı. Lütfen giriş yap sayfasından giriş yapın veya farklı bir e-posta adresi kullanın.'
-          } else if (authError.message.includes('Invalid email')) {
-            userFriendlyMessage = 'Geçersiz e-posta adresi. Lütfen doğru bir e-posta adresi girin.'
-          } else if (authError.message.includes('Password')) {
-            userFriendlyMessage = 'Şifre çok kısa. Şifreniz en az 6 karakter olmalıdır.'
-          } else if (authError.message.includes('email')) {
-            userFriendlyMessage = 'E-posta adresi ile ilgili bir hata oluştu. Lütfen tekrar deneyin.'
-          }
-        }
-        
-        setErrorMessage(userFriendlyMessage)
-        setLoading(false)
-        return
-      }
-
-      const userId = authData.user.id
-
-      // Sihirli Vergi Numarası kontrolü (VIP/Tester için)
-      const MAGIC_TAX_NUMBER = '1111111111'
-      const cleanTaxNumber = formData.taxNumber.replace(/\s/g, '')
-      const isVipUser = cleanTaxNumber === MAGIC_TAX_NUMBER
-
-      // ADIM 2: Vergi Levhası dosyasını yükle (VIP kullanıcılar için opsiyonel)
-      let taxPlateUrl: string | null = null
-      if (formData.taxPlateFile && !isVipUser) {
-        try {
-          const fileExt = formData.taxPlateFile.name.split('.').pop()
-          const fileName = `${userId}/tax_plate_${Date.now()}.${fileExt}`
-          const filePath = `verification_docs/${fileName}`
-
-          // Storage'a yükle
-          const { error: uploadError } = await supabase.storage
-            .from('verification_docs')
-            .upload(filePath, formData.taxPlateFile, {
-              cacheControl: '3600',
-              upsert: false,
-            })
-
-          if (uploadError) {
-            console.error('Vergi levhası yükleme hatası:', uploadError)
-            setErrorMessage(`Vergi levhası yüklenirken hata: ${uploadError.message}`)
-            setLoading(false)
-            return
-          }
-
-          // Public URL'i al
-          const { data: urlData } = supabase.storage
-            .from('verification_docs')
-            .getPublicUrl(filePath)
-
-          if (!urlData?.publicUrl) {
-            setErrorMessage('Vergi levhası URL\'i alınamadı.')
-            setLoading(false)
-            return
-          }
-
-          taxPlateUrl = urlData.publicUrl
-        } catch (uploadErr: any) {
-          console.error('Vergi levhası yükleme hatası:', uploadErr)
-          setErrorMessage(`Vergi levhası yüklenirken hata: ${uploadErr.message}`)
-          setLoading(false)
-          return
-        }
-      }
-
-      // ADIM 3: Profiles tablosunu güncelle
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone ? formData.phone.replace(/\s/g, '') : null,
-          business_name: formData.businessName || null,
-          tax_number: cleanTaxNumber,
-          tax_plate_url: taxPlateUrl,
-          is_provider: true,
-          is_verified: isVipUser ? true : false, // Sihirli numara ise direkt onayla!
-        })
-        .eq('id', userId)
-
-      if (profileError) {
-        setErrorMessage(`Profil güncellenirken hata: ${profileError.message}`)
-        setLoading(false)
-        return
-      }
-
-      // ADIM 4: Hizmetleri ekle
-      const serviceInserts = formData.selectedServices.map((serviceId) => ({
-        provider_id: userId,
-        service_id: serviceId,
-      }))
-
-      const { error: servicesError } = await supabase
-        .from('provider_services')
-        .insert(serviceInserts)
-
-      if (servicesError) {
-        setErrorMessage(`Hizmetler eklenirken hata: ${servicesError.message}`)
-        setLoading(false)
-        return
-      }
-
-      // ADIM 5: İlçeleri ekle
-      const locationInserts = formData.selectedDistricts.map((districtId) => ({
-        provider_id: userId,
-        district_id: districtId,
-      }))
-
-      const { error: locationsError } = await supabase
-        .from('provider_locations')
-        .insert(locationInserts)
-
-      if (locationsError) {
-        setErrorMessage(`İlçeler eklenirken hata: ${locationsError.message}`)
-        setLoading(false)
-        return
-      }
-
-      // Başarılı
-      router.push(`/register/success?email=${encodeURIComponent(formData.email)}`)
-    } catch (err: any) {
-      console.error('Beklenmeyen hata:', err)
-      
-      // Beklenmeyen hatalar için de açıklayıcı mesaj
-      let userFriendlyMessage = 'Kayıt başarısız: Bir hata oluştu. Lütfen tekrar deneyin.'
-      
-      if (err.message) {
-        if (err.message.includes('network') || err.message.includes('fetch')) {
-          userFriendlyMessage = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.'
-        } else if (err.message.includes('timeout')) {
-          userFriendlyMessage = 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.'
-        } else {
-          userFriendlyMessage = err.message
-        }
-      }
-      
-      setErrorMessage(userFriendlyMessage)
-      setLoading(false)
-    }
+    // Action'ı tetikle
+    // useFormState kullandığımız için direkt fonksiyonu çağırmak yerine
+    // bir form submit event'i simüle edebiliriz veya startTransition içinde çağırabiliriz
+    // ANCAK useFormState ile dönen 'formAction' bir fonksiyondur ve FormData kabul eder.
+    formAction(data)
   }
 
   const progressPercentage = (currentStep / 3) * 100
+
+  // Helper to get field error
+  const getFieldError = (fieldName: string) => {
+    if (state.error && typeof state.error === 'object' && state.error[fieldName]) {
+      return state.error[fieldName][0]
+    }
+    return null
+  }
 
   return (
     <PageContainer>
@@ -421,11 +258,29 @@ export default function ProRegisterPage() {
               </div>
             </div>
 
-            {errorMessage && (
+            {/* Global Error Message */}
+            {(errorMessage || (state.error && typeof state.error === 'string')) && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Hata</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
+                <AlertDescription>
+                  {errorMessage || (state.error as string)}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Zod Field Errors Summary (Optional, if we want to show all at top) */}
+            {state.error && typeof state.error === 'object' && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Validasyon Hatası</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4">
+                    {Object.entries(state.error).map(([key, errors]) => (
+                      <li key={key}>{errors[0]}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
               </Alert>
             )}
 
@@ -440,22 +295,18 @@ export default function ProRegisterPage() {
                     <Label htmlFor="firstName">Ad *</Label>
                     <Input
                       id="firstName"
-                      type="text"
-                      placeholder="Adınız"
                       value={formData.firstName}
                       onChange={(e) => updateFormData('firstName', e.target.value)}
-                      required
+                      className={getFieldError('full_name') ? 'border-red-500' : ''}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Soyad *</Label>
                     <Input
                       id="lastName"
-                      type="text"
-                      placeholder="Soyadınız"
                       value={formData.lastName}
                       onChange={(e) => updateFormData('lastName', e.target.value)}
-                      required
+                      className={getFieldError('full_name') ? 'border-red-500' : ''}
                     />
                   </div>
                 </div>
@@ -465,11 +316,11 @@ export default function ProRegisterPage() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="ornek@email.com"
                       value={formData.email}
                       onChange={(e) => updateFormData('email', e.target.value)}
-                      required
+                      className={getFieldError('email') ? 'border-red-500' : ''}
                     />
+                    {getFieldError('email') && <p className="text-xs text-red-500">{getFieldError('email')}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefon</Label>
@@ -479,14 +330,12 @@ export default function ProRegisterPage() {
                       placeholder="5321234567"
                       value={formData.phone}
                       onChange={(e) => {
-                        // Sadece rakam ve boşluk kabul et
                         const value = e.target.value.replace(/[^\d\s]/g, '')
                         updateFormData('phone', value)
                       }}
+                      className={getFieldError('phone') ? 'border-red-500' : ''}
                     />
-                    <p className="text-xs text-gray-500">
-                      Başına 0 yazmayın. Örn: 5321234567
-                    </p>
+                    {getFieldError('phone') && <p className="text-xs text-red-500">{getFieldError('phone')}</p>}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -494,12 +343,11 @@ export default function ProRegisterPage() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="En az 6 karakter"
                     value={formData.password}
                     onChange={(e) => updateFormData('password', e.target.value)}
-                    required
-                    minLength={6}
+                    className={getFieldError('password') ? 'border-red-500' : ''}
                   />
+                  {getFieldError('password') && <p className="text-xs text-red-500">{getFieldError('password')}</p>}
                 </div>
               </div>
             )}
@@ -510,14 +358,12 @@ export default function ProRegisterPage() {
                 <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
                   İş Bilgileri
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="businessName">İşletme Adı</Label>
                     <Input
                       id="businessName"
-                      type="text"
-                      placeholder="İşletme adınız (opsiyonel)"
                       value={formData.businessName}
                       onChange={(e) => updateFormData('businessName', e.target.value)}
                     />
@@ -526,20 +372,15 @@ export default function ProRegisterPage() {
                     <Label htmlFor="taxNumber">Vergi Numarası / TC Kimlik No *</Label>
                     <Input
                       id="taxNumber"
-                      type="text"
-                      placeholder="Vergi numaranız veya TC Kimlik No"
                       value={formData.taxNumber}
                       onChange={(e) => {
-                        // Sadece rakam kabul et
                         const value = e.target.value.replace(/\D/g, '')
                         updateFormData('taxNumber', value)
                       }}
                       maxLength={11}
-                      required
+                      className={getFieldError('tax_number') ? 'border-red-500' : ''}
                     />
-                    <p className="text-xs text-gray-500">
-                      10-11 karakter, sadece rakam
-                    </p>
+                    {getFieldError('tax_number') && <p className="text-xs text-red-500">{getFieldError('tax_number')}</p>}
                   </div>
                 </div>
 
@@ -555,14 +396,10 @@ export default function ProRegisterPage() {
                       const file = e.target.files?.[0] || null
                       updateFormData('taxPlateFile', file)
                     }}
-                    required
                   />
-                  <p className="text-xs text-gray-500">
-                    Onay süreci için vergi levhanızın fotoğrafını yüklemeniz zorunludur. (JPG, PNG, WEBP veya PDF, max 5MB)
-                  </p>
                   {formData.taxPlateFile && (
                     <p className="text-sm text-green-600 mt-1">
-                      ✓ Dosya seçildi: {formData.taxPlateFile.name} ({(formData.taxPlateFile.size / 1024 / 1024).toFixed(2)} MB)
+                      ✓ Dosya seçildi: {formData.taxPlateFile.name}
                     </p>
                   )}
                 </div>
@@ -571,7 +408,7 @@ export default function ProRegisterPage() {
                   <h4 className="text-lg font-semibold text-gray-800">
                     Uzmanlık Alanları (Çoklu Seçim) *
                   </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
+                  <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50 ${getFieldError('service_ids') ? 'border-red-500' : ''}`}>
                     {services.map((service) => (
                       <div
                         key={service.id}
@@ -592,18 +429,14 @@ export default function ProRegisterPage() {
                       </div>
                     ))}
                   </div>
-                  {formData.selectedServices.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {formData.selectedServices.length} hizmet seçildi
-                    </p>
-                  )}
+                  {getFieldError('service_ids') && <p className="text-xs text-red-500">{getFieldError('service_ids')}</p>}
                 </div>
 
                 <div className="space-y-4">
                   <h4 className="text-lg font-semibold text-gray-800">
                     Hizmet Bölgesi (Çoklu Seçim) *
                   </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50">
+                  <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-gray-50 ${getFieldError('district_ids') ? 'border-red-500' : ''}`}>
                     {districts.map((district) => (
                       <div
                         key={district.id}
@@ -624,11 +457,7 @@ export default function ProRegisterPage() {
                       </div>
                     ))}
                   </div>
-                  {formData.selectedDistricts.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                      {formData.selectedDistricts.length} ilçe seçildi
-                    </p>
-                  )}
+                  {getFieldError('district_ids') && <p className="text-xs text-red-500">{getFieldError('district_ids')}</p>}
                 </div>
               </div>
             )}
@@ -639,7 +468,7 @@ export default function ProRegisterPage() {
                 <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">
                   Kayıt Özeti
                 </h3>
-                
+
                 <div className="space-y-4 bg-gray-50 p-6 rounded-lg">
                   <div>
                     <h4 className="font-semibold text-gray-700 mb-2">Kişisel Bilgiler</h4>
@@ -656,7 +485,7 @@ export default function ProRegisterPage() {
                       {formData.businessName && <p><strong>İşletme Adı:</strong> {formData.businessName}</p>}
                       <p><strong>Vergi Numarası:</strong> {formData.taxNumber}</p>
                       {formData.taxPlateFile && (
-                        <p><strong>Vergi Levhası:</strong> {formData.taxPlateFile.name} ({(formData.taxPlateFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+                        <p><strong>Vergi Levhası:</strong> {formData.taxPlateFile.name}</p>
                       )}
                     </div>
                   </div>
@@ -716,7 +545,7 @@ export default function ProRegisterPage() {
                 type="button"
                 variant="outline"
                 onClick={handleBack}
-                disabled={currentStep === 1 || loading}
+                disabled={currentStep === 1}
                 className="flex items-center gap-2"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -735,11 +564,11 @@ export default function ProRegisterPage() {
               ) : (
                 <Button
                   type="button"
-                  onClick={handleSubmit}
-                  disabled={loading || !legalAccepted}
+                  onClick={handleFinalSubmit}
+                  disabled={!legalAccepted}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
-                  {loading ? 'Kayıt Yapılıyor...' : 'Kaydı Tamamla'}
+                  Kaydı Tamamla
                 </Button>
               )}
             </div>
