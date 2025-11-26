@@ -80,6 +80,42 @@ export default function ClientRegisterPage() {
     }
   };
 
+  // Password Strength Logic
+  const getPasswordStrength = (password: string) => {
+    if (!password) return 0;
+    if (password.length < 6) return 1; // Weak
+    if (password.length < 10) return 2; // Medium
+    return 3; // Strong
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
+
+  const getStrengthColor = () => {
+    if (passwordStrength === 1) return "bg-red-500";
+    if (passwordStrength === 2) return "bg-yellow-500";
+    if (passwordStrength === 3) return "bg-green-500";
+    return "bg-gray-200";
+  };
+
+  const getStrengthWidth = () => {
+    if (passwordStrength === 0) return "0%";
+    if (passwordStrength === 1) return "33%";
+    if (passwordStrength === 2) return "66%";
+    return "100%";
+  };
+
+  // Button Active State Logic
+  const isStep1Valid = formData.full_name.length > 0 && formData.email.length > 0;
+  const isStep2Valid = formData.phone.length > 0 && formData.password.length > 0;
+  const isFormValid = isStep1Valid && isStep2Valid && legalAccepted;
+
+  // Animation Variants
+  const slideVariants = {
+    enter: { x: 50, opacity: 0 },
+    center: { x: 0, opacity: 1 },
+    exit: { x: -50, opacity: 0 },
+  };
+
   return (
     <div className="w-full min-h-screen flex flex-col lg:flex-row">
 
@@ -121,14 +157,16 @@ export default function ClientRegisterPage() {
           </div>
 
           {/* FORM */}
-          <form action={formAction} className="space-y-6">
-            <AnimatePresence mode="wait">
+          <form action={formAction} className="space-y-6 overflow-hidden">
+            <AnimatePresence mode="wait" initial={false}>
               {step === 1 && (
                 <motion.div
                   key="step1"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="space-y-5"
                 >
                   <div>
@@ -136,7 +174,7 @@ export default function ClientRegisterPage() {
                     <Input
                       id="full_name" name="full_name"
                       placeholder="Adınız Soyadınız"
-                      className="mt-1 h-12"
+                      className="mt-1 h-12 focus:border-indigo-600 transition-colors"
                       value={formData.full_name}
                       onChange={handleChange}
                     />
@@ -149,7 +187,7 @@ export default function ClientRegisterPage() {
                     <Input
                       id="email" name="email" type="email"
                       placeholder="ornek@mail.com"
-                      className="mt-1 h-12"
+                      className="mt-1 h-12 focus:border-indigo-600 transition-colors"
                       value={formData.email}
                       onChange={handleChange}
                     />
@@ -157,18 +195,30 @@ export default function ClientRegisterPage() {
                       <p className="text-red-500 text-xs mt-1 font-medium">{state.error.email[0]}</p>
                     )}
                   </div>
-                  <Button type="button" onClick={nextStep} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-indigo-200 transition-all hover:shadow-indigo-300">
-                    Devam Et <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={!isStep1Valid}
+                      className={`w-full h-12 text-white font-semibold text-lg rounded-xl shadow-lg transition-all ${isStep1Valid ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300' : 'bg-gray-300 cursor-not-allowed'}`}
+                    >
+                      Devam Et <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </motion.div>
                 </motion.div>
               )}
 
               {step === 2 && (
                 <motion.div
                   key="step2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="space-y-5"
                 >
                   <div>
@@ -176,7 +226,7 @@ export default function ClientRegisterPage() {
                     <Input
                       id="phone" name="phone" type="tel"
                       placeholder="5xxxxxxxxx" maxLength={10}
-                      className="mt-1 h-12"
+                      className="mt-1 h-12 focus:border-indigo-600 transition-colors"
                       value={formData.phone}
                       onChange={handleChange}
                     />
@@ -189,10 +239,19 @@ export default function ClientRegisterPage() {
                     <Label htmlFor="password">Şifre</Label>
                     <Input
                       id="password" name="password" type="password"
-                      className="mt-1 h-12"
+                      className="mt-1 h-12 focus:border-indigo-600 transition-colors"
                       value={formData.password}
                       onChange={handleChange}
                     />
+                    {/* Password Strength Indicator */}
+                    <div className="h-1 w-full bg-gray-100 mt-2 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full ${getStrengthColor()}`}
+                        initial={{ width: "0%" }}
+                        animate={{ width: getStrengthWidth() }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
                     {state.error && typeof state.error === 'object' && state.error.password && (
                       <p className="text-red-500 text-xs mt-1 font-medium">{state.error.password[0]}</p>
                     )}
@@ -201,9 +260,16 @@ export default function ClientRegisterPage() {
                     <Button type="button" variant="outline" onClick={prevStep} className="w-1/3 h-12 rounded-xl">
                       Geri
                     </Button>
-                    <Button type="button" onClick={nextStep} className="w-2/3 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-indigo-200 transition-all hover:shadow-indigo-300">
-                      Devam Et <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
+                    <motion.div className="w-2/3" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        type="button"
+                        onClick={nextStep}
+                        disabled={!isStep2Valid}
+                        className={`w-full h-12 text-white font-semibold text-lg rounded-xl shadow-lg transition-all ${isStep2Valid ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300' : 'bg-gray-300 cursor-not-allowed'}`}
+                      >
+                        Devam Et <ArrowRight className="ml-2 w-5 h-5" />
+                      </Button>
+                    </motion.div>
                   </div>
                 </motion.div>
               )}
@@ -211,9 +277,11 @@ export default function ClientRegisterPage() {
               {step === 3 && (
                 <motion.div
                   key="step3"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="space-y-6"
                 >
                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-3">
@@ -237,9 +305,15 @@ export default function ClientRegisterPage() {
                     <Button type="button" variant="outline" onClick={prevStep} className="w-1/3 h-12 rounded-xl">
                       Geri
                     </Button>
-                    <Button type="submit" disabled={!legalAccepted} className="w-2/3 h-12 bg-green-600 hover:bg-green-700 text-white font-semibold text-lg rounded-xl shadow-lg shadow-green-200 transition-all hover:shadow-green-300">
-                      Kaydı Tamamla
-                    </Button>
+                    <motion.div className="w-2/3" whileHover={legalAccepted ? { scale: 1.05 } : {}} whileTap={legalAccepted ? { scale: 0.95 } : {}}>
+                      <Button
+                        type="submit"
+                        disabled={!legalAccepted}
+                        className={`w-full h-12 text-white font-semibold text-lg rounded-xl shadow-lg transition-all ${legalAccepted ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' : 'bg-gray-300 cursor-not-allowed'}`}
+                      >
+                        Kaydı Tamamla
+                      </Button>
+                    </motion.div>
                   </div>
                 </motion.div>
               )}
@@ -258,11 +332,14 @@ export default function ClientRegisterPage() {
       {/* SAĞ TARAF (VİTRİN ALANI) - %60 */}
       <div className="hidden lg:block w-[60%] relative overflow-hidden">
         {/* Arka Plan Resmi */}
-        <div
+        <motion.div
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2053&auto=format&fit=crop')",
           }}
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.05 }}
+          transition={{ duration: 20, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
         />
 
         {/* Gradient Overlay */}
