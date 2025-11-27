@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { SearchForm } from '@/components/search-form'
-import { CategoryCards } from '@/components/category-cards'
+
 import { CheckCircle2, Shield, Star, Zap, DollarSign } from 'lucide-react'
 import HowItWorks from '@/components/home/HowItWorks'
 import FeaturedPros from '@/components/home/FeaturedPros'
@@ -193,10 +193,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Category Cards Section */}
-      <section id="kategoriler">
-        <CategoryCards />
-      </section>
+
 
       {/* Instagram Banner */}
       <InstagramBanner />
