@@ -49,6 +49,12 @@ export default function ClientRegisterPage() {
     }
   }, [state, router]);
 
+  useEffect(() => {
+    if (state.error) {
+      console.log("Form Errors:", state.error);
+    }
+  }, [state.error]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setIsTyping(true);
@@ -207,8 +213,6 @@ export default function ClientRegisterPage() {
               /* FORM */
               <form action={formAction} className="space-y-6 overflow-hidden">
                 {/* DEBUG: Form State */}
-                {state.error && console.log("Form Errors:", state.error)}
-
                 {/* Hidden Inputs for Multi-step Persistence */}
                 {step > 1 && (
                   <>
