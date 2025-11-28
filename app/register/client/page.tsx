@@ -206,6 +206,23 @@ export default function ClientRegisterPage() {
             ) : (
               /* FORM */
               <form action={formAction} className="space-y-6 overflow-hidden">
+                {/* DEBUG: Form State */}
+                {state.error && console.log("Form Errors:", state.error)}
+
+                {/* Hidden Inputs for Multi-step Persistence */}
+                {step > 1 && (
+                  <>
+                    <input type="hidden" name="full_name" value={formData.full_name} />
+                    <input type="hidden" name="email" value={formData.email} />
+                  </>
+                )}
+                {step > 2 && (
+                  <>
+                    <input type="hidden" name="phone" value={formData.phone} />
+                    <input type="hidden" name="password" value={formData.password} />
+                  </>
+                )}
+
                 <AnimatePresence mode="wait" initial={false}>
                   {step === 1 && (
                     <motion.div

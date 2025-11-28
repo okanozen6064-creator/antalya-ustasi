@@ -36,6 +36,7 @@ export default function LegalAgreement({ onAccept }: LegalAgreementProps) {
       {/* Dışarıdaki Checkbox */}
       <Checkbox
         id="legal-trigger"
+        name="terms_agreement_checkbox"
         checked={isAcceptedFinal}
         onCheckedChange={(checked) => {
           if (checked) {
